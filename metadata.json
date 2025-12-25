@@ -1,0 +1,8 @@
+{
+  "name": "Privaro Premium App",
+  "description": "A luxury executive chauffeur application with client, driver, and admin interfaces, featuring an integrated AI travel assistant.",
+  "requestFramePermissions": [
+    "geolocation",
+    "microphone"
+  ]
+}
