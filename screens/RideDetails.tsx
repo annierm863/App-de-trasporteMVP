@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { ROUTES } from '../routes';
 import { BackButton } from '../components/Navigation';
 
 const RideDetails: React.FC = () => {
@@ -11,11 +12,11 @@ const RideDetails: React.FC = () => {
           <BackButton />
           <h2 className="text-white text-lg font-bold leading-tight flex-1 text-center pr-10">Ride Details</h2>
         </div>
-        
+
         <div className="flex-1 px-4 pt-4 flex flex-col gap-6">
           <div className="flex justify-center">
             <div className="flex items-center gap-x-2 rounded-full bg-primary/10 border border-primary/20 px-4 py-1.5">
-              <span className="material-symbols-outlined text-primary filled" style={{fontSize: "18px"}}>check_circle</span>
+              <span className="material-symbols-outlined text-primary filled" style={{ fontSize: "18px" }}>check_circle</span>
               <p className="text-primary text-sm font-semibold tracking-wide uppercase">Confirmed</p>
             </div>
           </div>
@@ -23,7 +24,7 @@ const RideDetails: React.FC = () => {
           <div className="rounded-xl bg-[#2e291b] shadow-none p-5 flex flex-col gap-6">
             <div className="grid grid-cols-[32px_1fr] gap-x-3">
               <div className="flex flex-col items-center pt-1">
-                <span className="material-symbols-outlined text-primary" style={{fontSize: "20px"}}>radio_button_checked</span>
+                <span className="material-symbols-outlined text-primary" style={{ fontSize: "20px" }}>radio_button_checked</span>
                 <div className="w-[2px] bg-[#544e3b] h-full my-1 rounded-full"></div>
               </div>
               <div className="flex flex-col pb-6">
@@ -32,7 +33,7 @@ const RideDetails: React.FC = () => {
                 <p className="text-primary text-sm font-medium mt-1">09:00 AM</p>
               </div>
               <div className="flex flex-col items-center">
-                <span className="material-symbols-outlined text-primary" style={{fontSize: "20px"}}>location_on</span>
+                <span className="material-symbols-outlined text-primary" style={{ fontSize: "20px" }}>location_on</span>
               </div>
               <div className="flex flex-col">
                 <p className="text-white text-base font-semibold leading-tight">LAX Terminal 4</p>
@@ -40,9 +41,9 @@ const RideDetails: React.FC = () => {
                 <p className="text-gray-500 text-sm mt-1">~10:15 AM (Est.)</p>
               </div>
             </div>
-            
+
             <div className="h-px w-full bg-white/10"></div>
-            
+
             <div className="grid grid-cols-2 gap-4">
               {[
                 { label: 'Date', val: 'Oct 24, 2023', icon: 'calendar_today' },
@@ -53,7 +54,7 @@ const RideDetails: React.FC = () => {
                 <div key={item.label}>
                   <p className="text-text-subtle text-xs uppercase tracking-wider font-medium mb-1">{item.label}</p>
                   <div className="flex items-center gap-2">
-                    <span className="material-symbols-outlined text-primary" style={{fontSize: "18px"}}>{item.icon}</span>
+                    <span className="material-symbols-outlined text-primary" style={{ fontSize: "18px" }}>{item.icon}</span>
                     <span className="text-white text-sm font-medium">{item.val}</span>
                   </div>
                 </div>
@@ -66,7 +67,7 @@ const RideDetails: React.FC = () => {
             <div className="rounded-xl bg-[#2e291b] shadow-none p-4">
               <div className="flex items-start gap-4">
                 <div className="relative shrink-0">
-                  <img alt="Driver" className="size-14 rounded-full object-cover border-2 border-primary/20" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDlBfISc9dVFruiQkDrTejmSI-n61nNsGt8lgVuvtXwE6UJjpbZCVMQ8pnZar3xUTi01V2tH_bwT-Sk8dqKTV0SjHcbZKahLQ7oEYJ5J2LEvTxzvJ2xxS-1NcxCCnMVow_1KTFv7nUk8Znq1HEqupUtomtFMdOPjRgOrj5apYA7LzX77_AuGMFTbsws5o5DPYs1t7XiTHoNBkg9idNB3fTyC-juxu66yDN4YTHtzMU5cBr3Iq7xwRF6-7Ze6jTPSpsza_zr_z8a4_o"/>
+                  <img alt="Driver" className="size-14 rounded-full object-cover border-2 border-primary/20" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDlBfISc9dVFruiQkDrTejmSI-n61nNsGt8lgVuvtXwE6UJjpbZCVMQ8pnZar3xUTi01V2tH_bwT-Sk8dqKTV0SjHcbZKahLQ7oEYJ5J2LEvTxzvJ2xxS-1NcxCCnMVow_1KTFv7nUk8Znq1HEqupUtomtFMdOPjRgOrj5apYA7LzX77_AuGMFTbsws5o5DPYs1t7XiTHoNBkg9idNB3fTyC-juxu66yDN4YTHtzMU5cBr3Iq7xwRF6-7Ze6jTPSpsza_zr_z8a4_o" />
                   <div className="absolute -bottom-1 -right-1 flex items-center justify-center bg-[#2e291b] rounded-full p-0.5">
                     <div className="bg-primary text-black text-[10px] font-bold px-1.5 py-0.5 rounded-full flex items-center gap-0.5">4.9 <span className="material-symbols-outlined text-[10px] filled">star</span></div>
                   </div>
@@ -78,12 +79,12 @@ const RideDetails: React.FC = () => {
                       <p className="text-text-subtle text-sm truncate">Elite Chauffeur</p>
                     </div>
                     <div className="flex gap-2">
-                      <button className="size-9 rounded-full bg-primary/10 hover:bg-primary/20 flex items-center justify-center text-primary transition-colors"><span className="material-symbols-outlined" style={{fontSize: "20px"}}>chat</span></button>
-                      <button className="size-9 rounded-full bg-primary text-background-dark hover:bg-primary/90 flex items-center justify-center transition-colors"><span className="material-symbols-outlined filled" style={{fontSize: "20px"}}>call</span></button>
+                      <button className="size-9 rounded-full bg-primary/10 hover:bg-primary/20 flex items-center justify-center text-primary transition-colors"><span className="material-symbols-outlined" style={{ fontSize: "20px" }}>chat</span></button>
+                      <button className="size-9 rounded-full bg-primary text-background-dark hover:bg-primary/90 flex items-center justify-center transition-colors"><span className="material-symbols-outlined filled" style={{ fontSize: "20px" }}>call</span></button>
                     </div>
                   </div>
                   <div className="mt-3 p-3 bg-[#221e10] rounded-lg flex items-center gap-3">
-                    <span className="material-symbols-outlined text-gray-500" style={{fontSize: "24px"}}>directions_car</span>
+                    <span className="material-symbols-outlined text-gray-500" style={{ fontSize: "24px" }}>directions_car</span>
                     <div className="flex-1">
                       <p className="text-white text-sm font-semibold">Mercedes-Benz S-Class</p>
                       <div className="flex items-center gap-2 text-xs text-text-subtle">
@@ -121,8 +122,8 @@ const RideDetails: React.FC = () => {
         </div>
 
         <div className="mt-4 px-4 pb-4 pt-2">
-          <Link to="/client/service-info" className="w-full flex items-center justify-center gap-2 rounded-lg bg-primary text-background-dark font-bold h-12 mb-3 hover:bg-primary/90 transition-colors shadow-[0_0_15px_rgba(244,192,37,0.15)]">
-            <span className="material-symbols-outlined" style={{fontSize: "20px"}}>support_agent</span>
+          <Link to={ROUTES.CLIENT_SERVICE_INFO} className="w-full flex items-center justify-center gap-2 rounded-lg bg-primary text-background-dark font-bold h-12 mb-3 hover:bg-primary/90 transition-colors shadow-[0_0_15px_rgba(244,192,37,0.15)]">
+            <span className="material-symbols-outlined" style={{ fontSize: "20px" }}>support_agent</span>
             Contact Support
           </Link>
           <button className="w-full flex items-center justify-center gap-2 rounded-lg border border-red-500/30 text-red-400 font-medium h-12 hover:bg-red-500/5 transition-colors">

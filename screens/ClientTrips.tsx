@@ -1,6 +1,7 @@
 
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { ROUTES } from '../routes';
 import { BottomNavClient } from '../components/Navigation';
 
 const ClientTrips: React.FC = () => {
@@ -15,16 +16,16 @@ const ClientTrips: React.FC = () => {
             <span className="material-symbols-outlined">sort</span>
           </button>
         </div>
-        
+
         <div className="flex-1 flex flex-col px-4 pt-6 space-y-6">
           <div className="bg-surface-dark p-1 rounded-xl flex items-center">
-            <button 
+            <button
               onClick={() => setTab('upcoming')}
               className={`flex-1 py-2.5 px-4 rounded-lg transition-all duration-200 ${tab === 'upcoming' ? 'bg-primary text-background-dark shadow-sm' : 'text-[#bab29c] hover:text-white'}`}
             >
               <span className="text-sm font-bold">Upcoming</span>
             </button>
-            <button 
+            <button
               onClick={() => setTab('past')}
               className={`flex-1 py-2.5 px-4 rounded-lg transition-all duration-200 ${tab === 'past' ? 'bg-primary text-background-dark shadow-sm' : 'text-[#bab29c] hover:text-white'}`}
             >
@@ -34,7 +35,7 @@ const ClientTrips: React.FC = () => {
 
           <div className="space-y-4">
             {tab === 'upcoming' ? (
-              <Link to="/client/trip-live/1" className="block group relative bg-[#2c2920] rounded-xl p-5 border border-white/5 active:scale-[0.98] transition-all duration-200 shadow-lg shadow-black/20">
+              <Link to={ROUTES.CLIENT_TRIP_LIVE.replace(':id', '1')} className="block group relative bg-[#2c2920] rounded-xl p-5 border border-white/5 active:scale-[0.98] transition-all duration-200 shadow-lg shadow-black/20">
                 <div className="flex gap-4">
                   <div className="flex flex-col items-center justify-start pt-1 min-w-[50px]">
                     <span className="text-2xl font-bold text-white leading-none">24</span>

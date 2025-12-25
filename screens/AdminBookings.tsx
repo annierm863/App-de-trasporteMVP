@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { ROUTES } from '../routes';
 import { BottomNavAdmin } from '../components/Navigation';
 
 const AdminBookings: React.FC = () => {
@@ -11,7 +12,7 @@ const AdminBookings: React.FC = () => {
           <div className="flex items-center justify-between px-4 py-3">
             <h2 className="text-xl font-bold leading-tight tracking-[-0.015em] text-white">Bookings</h2>
             <div className="flex items-center justify-center w-10 h-10 rounded-full hover:bg-white/10 transition-colors cursor-pointer">
-              <span className="material-symbols-outlined text-white" style={{fontSize: "28px"}}>search</span>
+              <span className="material-symbols-outlined text-white" style={{ fontSize: "28px" }}>search</span>
             </div>
           </div>
           <div className="flex gap-2 px-4 pb-4 overflow-x-auto no-scrollbar border-b border-white/5">
@@ -25,10 +26,10 @@ const AdminBookings: React.FC = () => {
           <div className="mb-6">
             <h3 className="text-lg font-bold text-white mb-3">Today, Oct 24</h3>
             <div className="flex flex-col gap-3">
-              <Link to="/admin/booking/1" className="group relative flex flex-col gap-3 rounded-xl bg-surface-dark p-4 shadow-sm border border-white/5 active:scale-[0.98] transition-transform">
+              <Link to={ROUTES.ADMIN_BOOKING_DETAIL.replace(':id', '1')} className="group relative flex flex-col gap-3 rounded-xl bg-surface-dark p-4 shadow-sm border border-white/5 active:scale-[0.98] transition-transform">
                 <div className="flex justify-between items-start">
                   <div className="flex items-center gap-2">
-                    <span className="material-symbols-outlined text-gray-400" style={{fontSize: "20px"}}>schedule</span>
+                    <span className="material-symbols-outlined text-gray-400" style={{ fontSize: "20px" }}>schedule</span>
                     <span className="text-lg font-bold text-white">10:00 AM</span>
                   </div>
                   <div className="px-2.5 py-1 rounded-md bg-primary/10 border border-primary/20">
@@ -44,8 +45,8 @@ const AdminBookings: React.FC = () => {
           </div>
         </main>
 
-        <Link to="/admin/create-booking" className="fixed bottom-24 right-5 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-primary shadow-lg shadow-black/40 hover:scale-110 active:scale-95 transition-all duration-200">
-          <span className="material-symbols-outlined text-background-dark font-bold" style={{fontSize: "32px"}}>add</span>
+        <Link to={ROUTES.ADMIN_CREATE_BOOKING} className="fixed bottom-24 right-5 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-primary shadow-lg shadow-black/40 hover:scale-110 active:scale-95 transition-all duration-200">
+          <span className="material-symbols-outlined text-background-dark font-bold" style={{ fontSize: "32px" }}>add</span>
         </Link>
         <BottomNavAdmin active="bookings" />
       </div>

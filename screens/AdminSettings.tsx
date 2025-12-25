@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { ROUTES } from '../routes';
 import { BackButton, BottomNavAdmin } from '../components/Navigation';
 
 const AdminSettings: React.FC = () => {
@@ -15,7 +16,7 @@ const AdminSettings: React.FC = () => {
         <main className="flex-1 px-5 py-6 space-y-8">
           <div className="space-y-4">
             <h2 className="text-sm font-semibold uppercase tracking-wider text-gray-400">Policies</h2>
-            <Link to="/admin/rates" className="block w-full rounded-xl bg-surface-dark p-4 border border-white/5 flex items-center justify-between hover:bg-white/5 transition-colors">
+            <Link to={ROUTES.ADMIN_RATES} className="block w-full rounded-xl bg-surface-dark p-4 border border-white/5 flex items-center justify-between hover:bg-white/5 transition-colors">
               <span>Manage Rates</span>
               <span className="material-symbols-outlined text-primary">chevron_right</span>
             </Link>

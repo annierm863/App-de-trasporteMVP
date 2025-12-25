@@ -1,6 +1,6 @@
-
 import React from 'react';
-import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { ROUTES } from './routes';
 import LandingPage from './screens/LandingPage';
 import LoginScreen from './screens/LoginScreen';
 import ClientHome from './screens/ClientHome';
@@ -23,40 +23,41 @@ import DriverProfile from './screens/DriverProfile';
 
 const App: React.FC = () => {
   return (
-    <HashRouter>
+    <BrowserRouter>
       <div className="font-display selection:bg-primary/30">
         <Routes>
-          <Route path="/" element={<LandingPage />} />
-          <Route path="/login" element={<LoginScreen />} />
-          
+          {/* Public Routes */}
+          <Route path={ROUTES.ROOT} element={<LandingPage />} />
+          <Route path={ROUTES.LOGIN} element={<LoginScreen />} />
+
           {/* Client Routes */}
-          <Route path="/client/home" element={<ClientHome />} />
-          <Route path="/client/ride/:id" element={<RideDetails />} />
-          <Route path="/client/trips" element={<ClientTrips />} />
-          <Route path="/client/trip-live/:id" element={<TripLive />} />
-          <Route path="/client/profile" element={<ClientProfileScreen />} />
-          <Route path="/client/service-info" element={<ServiceInfo />} />
-          <Route path="/client/terms" element={<TermsPage />} />
-          
+          <Route path={ROUTES.CLIENT_HOME} element={<ClientHome />} />
+          <Route path={ROUTES.CLIENT_RIDE_DETAIL} element={<RideDetails />} />
+          <Route path={ROUTES.CLIENT_TRIPS} element={<ClientTrips />} />
+          <Route path={ROUTES.CLIENT_TRIP_LIVE} element={<TripLive />} />
+          <Route path={ROUTES.CLIENT_PROFILE} element={<ClientProfileScreen />} />
+          <Route path={ROUTES.CLIENT_SERVICE_INFO} element={<ServiceInfo />} />
+          <Route path={ROUTES.CLIENT_TERMS} element={<TermsPage />} />
+
           {/* Admin Routes */}
-          <Route path="/admin/dashboard" element={<AdminDashboard />} />
-          <Route path="/admin/bookings" element={<AdminBookings />} />
-          <Route path="/admin/booking/:id" element={<AdminBookingDetail />} />
-          <Route path="/admin/create-booking" element={<AdminCreateBooking />} />
-          <Route path="/admin/clients" element={<AdminClients />} />
-          <Route path="/admin/client/:id" element={<AdminClientDetail />} />
-          <Route path="/admin/rates" element={<AdminRates />} />
-          <Route path="/admin/rate/:id" element={<AdminRateDetail />} />
-          <Route path="/admin/settings" element={<AdminSettings />} />
-          
+          <Route path={ROUTES.ADMIN_DASHBOARD} element={<AdminDashboard />} />
+          <Route path={ROUTES.ADMIN_BOOKINGS} element={<AdminBookings />} />
+          <Route path={ROUTES.ADMIN_BOOKING_DETAIL} element={<AdminBookingDetail />} />
+          <Route path={ROUTES.ADMIN_CREATE_BOOKING} element={<AdminCreateBooking />} />
+          <Route path={ROUTES.ADMIN_CLIENTS} element={<AdminClients />} />
+          <Route path={ROUTES.ADMIN_CLIENT_DETAIL} element={<AdminClientDetail />} />
+          <Route path={ROUTES.ADMIN_RATES} element={<AdminRates />} />
+          <Route path={ROUTES.ADMIN_RATE_DETAIL} element={<AdminRateDetail />} />
+          <Route path={ROUTES.ADMIN_SETTINGS} element={<AdminSettings />} />
+
           {/* Driver Routes */}
-          <Route path="/driver/profile" element={<DriverProfile />} />
+          <Route path={ROUTES.DRIVER_PROFILE} element={<DriverProfile />} />
 
           {/* Fallback */}
-          <Route path="*" element={<Navigate to="/" replace />} />
+          <Route path="*" element={<Navigate to={ROUTES.ROOT} replace />} />
         </Routes>
       </div>
-    </HashRouter>
+    </BrowserRouter>
   );
 };
 
