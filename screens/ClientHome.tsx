@@ -39,23 +39,55 @@ const ClientHome: React.FC = () => {
     }
   };
 
+  const [userId, setUserId] = useState<string | null>(null);
+
+  React.useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => {
+      if (data.user) setUserId(data.user.id);
+    });
+  }, []);
+
   const handleRequestRide = async () => {
     if (!pickup || !dropoff) {
       alert('Please enter pickup and dropoff locations');
       return;
     }
 
+    if (!userId) {
+      alert('You must be logged in to request a ride.');
+      navigate(ROUTES.LOGIN);
+      return;
+    }
+
     setIsBooking(true);
     try {
-      // 1. Get the test client (James)
-      // In a real app, this comes from auth context
-      const clientId = 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11';
+      // 1. Check Guest Limit
+      const { data: clientData } = await supabase
+        .from('clients')
+        .select('is_guest')
+        .eq('id', userId)
+        .single();
 
-      // 2. Insert Booking
+      if (clientData?.is_guest) {
+        const { count, error: countError } = await supabase
+          .from('bookings')
+          .select('id', { count: 'exact', head: true })
+          .eq('client_id', userId);
+
+        if (countError) throw countError;
+
+        if ((count || 0) >= 3) {
+          alert('Guest Limit Reached.\n\nYou have used your 3 complimentary guest rides. Please sign up for a full account to enjoy unlimited premium travel.');
+          // Optional: navigate to sign-up or profile to convert account
+          return;
+        }
+      }
+
+      // 2. Insert Booking with REAL User ID
       const { data, error } = await supabase
         .from('bookings')
         .insert({
-          client_id: clientId,
+          client_id: userId,
           pickup_address: pickup,
           dropoff_address: dropoff,
           pickup_datetime: new Date().toISOString(),
@@ -76,7 +108,7 @@ const ClientHome: React.FC = () => {
 
     } catch (err) {
       console.error('Booking failed:', err);
-      alert('Failed to request ride. Make sure to seed the database first!');
+      alert('Failed to request ride. Please try again.');
     } finally {
       setIsBooking(false);
     }
