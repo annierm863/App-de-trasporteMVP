@@ -63,15 +63,15 @@ const LandingPage: React.FC = () => {
         <div className="flex flex-col items-center justify-center flex-grow">
           <div className="mb-8 relative group">
             <div className="absolute -inset-1 rounded-full bg-primary/20 blur-xl opacity-75 group-hover:opacity-100 transition duration-1000 group-hover:duration-200"></div>
-            <div className="relative flex h-24 w-24 items-center justify-center rounded-2xl bg-[#2a261a] border border-primary/20 shadow-2xl">
-              <span className="material-symbols-outlined text-6xl text-primary filled">local_taxi</span>
+            <div className="relative flex h-32 w-32 items-center justify-center rounded-2xl bg-[#2a261a] border border-primary/20 shadow-2xl p-4">
+              <img src="/privaro_logo.png" alt="Privaro" className="w-full h-full object-contain" />
             </div>
           </div>
           <div className="text-center">
-            <h1 className="text-4xl font-bold tracking-tight text-white mb-2">LUXE<span className="text-primary font-normal">RIDE</span></h1>
+            <h1 className="text-4xl font-bold tracking-tight text-white mb-2 tracking-widest uppercase">PRIVARO</h1>
             <div className="flex items-center justify-center gap-3">
               <div className="h-[1px] w-8 bg-gradient-to-r from-transparent to-primary/50"></div>
-              <p className="text-[11px] font-semibold tracking-[0.3em] uppercase text-white/50">Executive Class</p>
+              <p className="text-[11px] font-semibold tracking-[0.3em] uppercase text-white/50">Luxe Ride</p>
               <div className="h-[1px] w-8 bg-gradient-to-l from-transparent to-primary/50"></div>
             </div>
           </div>
@@ -80,13 +80,13 @@ const LandingPage: React.FC = () => {
         <div className="flex flex-col items-center w-full space-y-8 mb-8">
           <div className="text-center space-y-3">
             <h2 className="text-white text-[26px] font-bold leading-tight tracking-wide">
-              {isQrEntry ? 'Welcome, Guest' : 'Premium Private'} <br />
-              <span className="text-white/90">{isQrEntry ? 'Ride in Style' : 'Rides On Demand'}</span>
+              {isQrEntry ? 'Welcome, Guest' : 'Access Your Journey'} <br />
+              <span className="text-white/90">{isQrEntry ? 'Ride in Style' : 'Experience the ultimate in luxury travel.'}</span>
             </h2>
             <p className="text-white/40 text-sm font-light leading-relaxed max-w-[280px] mx-auto">
               {isQrEntry
                 ? 'Continue as a guest for a quick ride, or sign in for full benefits.'
-                : 'Professional chauffeurs at your service, anytime, anywhere.'}
+                : ''}
             </p>
           </div>
           <div className="w-full pt-2">
@@ -95,7 +95,8 @@ const LandingPage: React.FC = () => {
                 <button
                   onClick={handleGuestContinue}
                   disabled={loading}
-                  className="group w-full flex items-center justify-center rounded-lg bg-primary h-[56px] px-6 text-[#181611] text-lg font-bold leading-normal tracking-wide shadow-[0_0_20px_-5px_rgba(244,192,37,0.3)] hover:shadow-[0_0_25px_-5px_rgba(244,192,37,0.5)] hover:bg-[#ffcd38] active:scale-[0.99] transition-all duration-300 disabled:opacity-70 disabled:cursor-not-allowed">
+                  className="group w-full flex items-center justify-center rounded-lg bg-primary h-[56px] px-6 text-[#181611] text-lg font-bold leading-normal tracking-wide shadow-[0_0_20px_-5px_rgba(244,192,37,0.3)] hover:shadow-[0_0_25px_-5px_rgba(244,192,37,0.5)] hover:bg-[#ffcd38] active:scale-[0.99] transition-all duration-300 disabled:opacity-70 disabled:cursor-not-allowed"
+                >
                   {loading ? (
                     <span className="size-5 border-2 border-[#181611] border-t-transparent rounded-full animate-spin"></span>
                   ) : (
@@ -112,17 +113,18 @@ const LandingPage: React.FC = () => {
                 </div>
               </>
             ) : (
-              <Link to={ROUTES.LOGIN} className="group w-full flex items-center justify-center rounded-lg bg-primary h-[56px] px-6 text-[#181611] text-lg font-bold leading-normal tracking-wide shadow-[0_0_20px_-5px_rgba(244,192,37,0.3)] hover:shadow-[0_0_25px_-5px_rgba(244,192,37,0.5)] hover:bg-[#ffcd38] active:scale-[0.99] transition-all duration-300">
-                <span className="truncate">Get Started</span>
-                <span className="material-symbols-outlined ml-2 text-[20px] transition-transform group-hover:translate-x-1">arrow_forward</span>
-              </Link>
-            )}
-
-            {!isQrEntry && (
-              <div className="mt-6 flex justify-center">
-                <Link to={ROUTES.LOGIN} className="text-sm font-medium text-white/40 hover:text-primary transition-colors flex items-center gap-1">
-                  Already have an account? <span className="text-white/80 underline decoration-primary/50 underline-offset-4">Sign In</span>
+              <div className="space-y-3">
+                <Link to={ROUTES.LOGIN} className="group w-full flex items-center justify-center rounded-lg bg-primary h-[56px] px-6 text-[#181611] text-lg font-bold leading-normal tracking-wide shadow-[0_0_20px_-5px_rgba(244,192,37,0.3)] hover:shadow-[0_0_25px_-5px_rgba(244,192,37,0.5)] hover:bg-[#ffcd38] active:scale-[0.99] transition-all duration-300">
+                  <span className="truncate">Log In / Sign Up</span>
+                  <span className="material-symbols-outlined ml-2 text-[20px] transition-transform group-hover:translate-x-1">person</span>
                 </Link>
+
+                {/* Hidden/Subtle Admin Link for YOU */}
+                <div className="pt-4 flex justify-center opacity-20 hover:opacity-100 transition-opacity">
+                  <Link to={ROUTES.LOGIN} className="text-[10px] uppercase tracking-widest text-white/50">
+                    Staff Access
+                  </Link>
+                </div>
               </div>
             )}
           </div>

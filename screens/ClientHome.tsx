@@ -24,6 +24,46 @@ const ClientHome: React.FC = () => {
   const [dropoff, setDropoff] = useState('');
   const [isBooking, setIsBooking] = useState(false);
 
+  // Auth & Guest State
+  const [userId, setUserId] = useState<string | null>(null);
+  const [userName, setUserName] = useState('');
+  const [isGuest, setIsGuest] = useState(false);
+
+  // Modals & Flows
+  const [showGuestInfoModal, setShowGuestInfoModal] = useState(false);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+
+  // Guest Info Form
+  const [guestName, setGuestName] = useState('');
+  const [guestPhone, setGuestPhone] = useState('');
+  const [guestEmail, setGuestEmail] = useState('');
+
+  // Payment State
+  const [selectedPayment, setSelectedPayment] = useState<'cash' | 'zelle' | 'card'>('cash');
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => {
+      if (data.user) {
+        setUserId(data.user.id);
+        fetchUserProfile(data.user.id);
+      }
+    });
+  }, []);
+
+  const fetchUserProfile = async (id: string) => {
+    const { data } = await supabase.from('clients').select('is_guest, full_name, phone').eq('id', id).single();
+    if (data) {
+      if (data.is_guest) setIsGuest(true);
+      if (data.full_name) {
+        setUserName(data.full_name.split(' ')[0]); // First name
+        if (data.full_name !== 'Guest Client') setGuestName(data.full_name);
+      } else {
+        setUserName('Guest');
+      }
+      if (data.phone !== '000-000-0000') setGuestPhone(data.phone);
+    }
+  };
+
   const handleAiAdvice = async () => {
     if (!aiQuery) return;
     setLoadingAi(true);
@@ -39,15 +79,8 @@ const ClientHome: React.FC = () => {
     }
   };
 
-  const [userId, setUserId] = useState<string | null>(null);
-
-  React.useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
-      if (data.user) setUserId(data.user.id);
-    });
-  }, []);
-
-  const handleRequestRide = async () => {
+  // Step 1: Initiate Request
+  const handleRequestRideClick = async () => {
     if (!pickup || !dropoff) {
       alert('Please enter pickup and dropoff locations');
       return;
@@ -59,31 +92,52 @@ const ClientHome: React.FC = () => {
       return;
     }
 
-    setIsBooking(true);
-    try {
-      // 1. Check Guest Limit
-      const { data: clientData } = await supabase
-        .from('clients')
-        .select('is_guest')
-        .eq('id', userId)
-        .single();
-
-      if (clientData?.is_guest) {
-        const { count, error: countError } = await supabase
-          .from('bookings')
-          .select('id', { count: 'exact', head: true })
-          .eq('client_id', userId);
-
-        if (countError) throw countError;
-
-        if ((count || 0) >= 3) {
-          alert('Guest Limit Reached.\n\nYou have used your 3 complimentary guest rides. Please sign up for a full account to enjoy unlimited premium travel.');
-          // Optional: navigate to sign-up or profile to convert account
-          return;
-        }
+    // Check Guest Status & Info Readiness
+    if (isGuest) {
+      // Validate Limit
+      const { count } = await supabase.from('bookings').select('id', { count: 'exact', head: true }).eq('client_id', userId);
+      if ((count || 0) >= 3) {
+        alert('Guest Limit Reached.\n\nPlease sign up for a full account to enjoy unlimited premium travel.');
+        return;
       }
 
-      // 2. Insert Booking with REAL User ID
+      // Check if we have their info
+      if (!guestName || !guestPhone || guestName === 'Guest Client' || userName === 'Guest') {
+        setShowGuestInfoModal(true);
+        return;
+      }
+    }
+
+    // If all good, proceed to payment
+    setShowPaymentModal(true);
+  };
+
+  // Step 2: Save Guest Info (if needed)
+  const handleSaveGuestInfo = async () => {
+    if (!guestName || !guestPhone) return alert('Name and Phone are required.');
+
+    try {
+      const { error } = await supabase.from('clients').update({
+        full_name: guestName,
+        phone: guestPhone,
+        email: guestEmail || undefined
+      }).eq('id', userId);
+
+      if (error) throw error;
+
+      setUserName(guestName.split(' ')[0]); // Update header instantly
+      setShowGuestInfoModal(false);
+      setShowPaymentModal(true); // Continue flow
+    } catch (err) {
+      console.error('Error saving info:', err);
+      alert('Could not save info. Please try again.');
+    }
+  };
+
+  // Step 3: Finalize Booking
+  const handleConfirmBooking = async () => {
+    setIsBooking(true);
+    try {
       const { data, error } = await supabase
         .from('bookings')
         .insert({
@@ -94,14 +148,16 @@ const ClientHome: React.FC = () => {
           passengers: passengers,
           status: 'requested',
           estimated_fare_min: 85,
-          estimated_fare_max: 110
+          estimated_fare_max: 110,
+          payment_method: selectedPayment,
+          payment_status: 'pending'
         })
         .select()
         .single();
 
       if (error) throw error;
 
-      // 3. Navigate to Ride Detail
+      setShowPaymentModal(false);
       if (data) {
         navigate(ROUTES.CLIENT_RIDE_DETAIL.replace(':id', data.id));
       }
@@ -118,17 +174,20 @@ const ClientHome: React.FC = () => {
     <div className="bg-background-dark text-white font-display antialiased h-screen overflow-x-hidden pb-20">
       <div className="max-w-md mx-auto min-h-screen flex flex-col">
         <header className="flex items-center p-6 pb-2 justify-between">
-          <Link to={ROUTES.CLIENT_PROFILE} className="flex items-center gap-3">
-            <div className="relative">
-              <div className="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10 border-2 border-primary/20" style={{ backgroundImage: 'url("https://lh3.googleusercontent.com/aida-public/AB6AXuBk71eS28oa5TXQ3AuyHHKX9t4gnbAKXtKgQkjDIJ0Qd510B290iFfENFK4v2lwIIivMPmyG4b64kZU3p9g4w3yjLiB23Ery2tvlgfYtnzxSjetI7j3Dmgm2XvA3AdTlALvPhwsqP_agzqahHSVFSNsBZhZnaGulwF0GJrxeLmjAoH9rVY2UtheqW05tNkGAwbP1dpPbd-1tgi6PCG_XVHDlybNOCqw_YWKaHRy4iJYQ-jCtr8WNSl9tGK89zPlTPF0zi5-sB5cx4c")' }}></div>
-              <div className="absolute bottom-0 right-0 size-3 bg-green-500 rounded-full border-2 border-background-dark"></div>
-            </div>
+          {/* BRANDING UPDATE */}
+          <div className="flex items-center gap-3">
+            <img src="/privaro_logo.png" alt="Privaro" className="h-10 w-auto object-contain" />
             <div>
-              <h2 className="text-white text-base font-medium leading-tight">Good evening,</h2>
-              <h1 className="text-primary text-xl font-bold leading-tight">James</h1>
+              <h1 className="text-white text-lg font-bold tracking-widest uppercase">PRIVARO</h1>
+              <p className="text-[10px] text-primary tracking-[0.2em] uppercase">Luxe Ride</p>
             </div>
-          </Link>
+          </div>
+
           <div className="flex gap-2">
+            <Link to={ROUTES.CLIENT_PROFILE} className="flex flex-col items-end mr-2">
+              <span className="text-white/60 text-[10px] font-medium leading-tight">Welcome,</span>
+              <span className="text-primary text-sm font-bold leading-tight">{userName || '...'}</span>
+            </Link>
             <button
               onClick={handleSeed}
               className="p-2 rounded-full bg-white/5 border border-white/10 text-xs font-bold text-gray-400 hover:text-white"
@@ -261,7 +320,7 @@ const ClientHome: React.FC = () => {
             </div>
           </div>
           <button
-            onClick={handleRequestRide}
+            onClick={handleRequestRideClick}
             disabled={isBooking}
             className="w-full bg-primary hover:bg-primary-dark active:scale-[0.98] text-background-dark font-bold text-lg py-4 rounded-xl shadow-[0_0_25px_rgba(244,192,37,0.3)] transition-all flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
           >
@@ -275,6 +334,133 @@ const ClientHome: React.FC = () => {
             )}
           </button>
         </div>
+
+        {/* --- GUEST INFO MODAL --- */}
+        {showGuestInfoModal && (
+          <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-sm p-6">
+            <div className="bg-surface-dark w-full max-w-sm rounded-2xl p-6 border border-white/10 shadow-2xl animate-in fade-in zoom-in-95">
+              <h3 className="text-xl font-bold text-white mb-2">Guest Check-in</h3>
+              <p className="text-sm text-white/60 mb-6">Please provide your contact details so your chauffeur can reach you.</p>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="text-xs uppercase font-bold text-text-subtle mb-1 block">Full Name</label>
+                  <input
+                    type="text"
+                    value={guestName}
+                    onChange={e => setGuestName(e.target.value)}
+                    className="w-full bg-background-dark border border-white/10 rounded-lg h-12 px-4 text-white focus:border-primary"
+                    placeholder="John Doe"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs uppercase font-bold text-text-subtle mb-1 block">Phone Number</label>
+                  <input
+                    type="tel"
+                    value={guestPhone}
+                    onChange={e => setGuestPhone(e.target.value)}
+                    className="w-full bg-background-dark border border-white/10 rounded-lg h-12 px-4 text-white focus:border-primary"
+                    placeholder="+1 (555) 000-0000"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs uppercase font-bold text-text-subtle mb-1 block">Email (Optional)</label>
+                  <input
+                    type="email"
+                    value={guestEmail}
+                    onChange={e => setGuestEmail(e.target.value)}
+                    className="w-full bg-background-dark border border-white/10 rounded-lg h-12 px-4 text-white focus:border-primary"
+                    placeholder="receipt@example.com"
+                  />
+                </div>
+              </div>
+
+              <button
+                onClick={handleSaveGuestInfo}
+                className="w-full bg-primary text-background-dark font-bold h-12 rounded-xl mt-6 hover:bg-primary-dark"
+              >
+                Continue
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* --- PAYMENT MODAL --- */}
+        {showPaymentModal && (
+          <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center bg-black/80 backdrop-blur-sm p-4 sm:p-6">
+            <div className="bg-surface-dark w-full max-w-sm rounded-2xl p-6 border border-white/10 shadow-2xl animate-in slide-in-from-bottom-10 sm:zoom-in-95">
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-xl font-bold text-white">Payment Method</h3>
+                <button onClick={() => setShowPaymentModal(false)} className="text-white/40 hover:text-white"><span className="material-symbols-outlined">close</span></button>
+              </div>
+
+              <div className="space-y-3 mb-8">
+                {/* CASH */}
+                <button
+                  onClick={() => setSelectedPayment('cash')}
+                  className={`w-full flex items-center justify-between p-4 rounded-xl border transition-all ${selectedPayment === 'cash' ? 'bg-primary/10 border-primary' : 'bg-background-dark border-white/5 hover:border-white/20'}`}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className={`p-2 rounded-full ${selectedPayment === 'cash' ? 'bg-primary text-background-dark' : 'bg-white/10 text-white'}`}>
+                      <span className="material-symbols-outlined text-xl">payments</span>
+                    </div>
+                    <div className="text-left">
+                      <p className={`font-bold ${selectedPayment === 'cash' ? 'text-primary' : 'text-white'}`}>Cash</p>
+                      <p className="text-xs text-white/40">Pay chauffeur at pickup</p>
+                    </div>
+                  </div>
+                  {selectedPayment === 'cash' && <span className="material-symbols-outlined text-primary">check_circle</span>}
+                </button>
+
+                {/* ZELLE / CASHAPP */}
+                <button
+                  onClick={() => setSelectedPayment('zelle')}
+                  className={`w-full flex items-center justify-between p-4 rounded-xl border transition-all ${selectedPayment === 'zelle' ? 'bg-primary/10 border-primary' : 'bg-background-dark border-white/5 hover:border-white/20'}`}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className={`p-2 rounded-full ${selectedPayment === 'zelle' ? 'bg-primary text-background-dark' : 'bg-white/10 text-white'}`}>
+                      <span className="material-symbols-outlined text-xl">qr_code_scanner</span>
+                    </div>
+                    <div className="text-left">
+                      <p className={`font-bold ${selectedPayment === 'zelle' ? 'text-primary' : 'text-white'}`}>Zelle / CashApp</p>
+                      <p className="text-xs text-white/40">Scan QR code safely</p>
+                    </div>
+                  </div>
+                  {selectedPayment === 'zelle' && <span className="material-symbols-outlined text-primary">check_circle</span>}
+                </button>
+
+                {/* CARD */}
+                <button
+                  onClick={() => setSelectedPayment('card')}
+                  className={`w-full flex items-center justify-between p-4 rounded-xl border transition-all ${selectedPayment === 'card' ? 'bg-primary/10 border-primary' : 'bg-background-dark border-white/5 hover:border-white/20'}`}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className={`p-2 rounded-full ${selectedPayment === 'card' ? 'bg-primary text-background-dark' : 'bg-white/10 text-white'}`}>
+                      <span className="material-symbols-outlined text-xl">credit_card</span>
+                    </div>
+                    <div className="text-left">
+                      <p className={`font-bold ${selectedPayment === 'card' ? 'text-primary' : 'text-white'}`}>Credit Card</p>
+                      <p className="text-xs text-white/40">Secure Payment Link</p>
+                    </div>
+                  </div>
+                  {selectedPayment === 'card' && <span className="material-symbols-outlined text-primary">check_circle</span>}
+                </button>
+              </div>
+
+              <button
+                onClick={handleConfirmBooking}
+                disabled={isBooking}
+                className="w-full bg-primary hover:bg-primary-dark text-background-dark font-bold text-lg py-4 rounded-xl shadow-lg flex items-center justify-center gap-2"
+              >
+                {isBooking ? (
+                  <div className="size-5 border-2 border-background-dark border-t-transparent rounded-full animate-spin"></div>
+                ) : (
+                  <span>Confirm Booking</span>
+                )}
+              </button>
+            </div>
+          </div>
+        )}
 
         {showAiModal && (
           <div className="fixed inset-0 z-[100] flex items-end justify-center bg-black/80 backdrop-blur-sm p-4">
