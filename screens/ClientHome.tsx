@@ -11,19 +11,19 @@ import VoiceConcierge from '../components/VoiceConcierge';
 
 const ClientHome: React.FC = () => {
   const navigate = useNavigate();
+  // Form State
   const [tripType, setTripType] = useState('point_to_point');
   const [passengers, setPassengers] = useState(2);
-  const [showAiModal, setShowAiModal] = useState(false);
-  const [showVoiceModal, setShowVoiceModal] = useState(false);
-  const [aiQuery, setAiQuery] = useState('');
-  const [aiResponse, setAiResponse] = useState('');
-  const [loadingAi, setLoadingAi] = useState(false);
-
-  // Form State
   const [pickup, setPickup] = useState('San Francisco Intl Airport');
   const [dropoff, setDropoff] = useState('');
-  const [selectedDate, setSelectedDate] = useState('Today');
-  const [selectedTime, setSelectedTime] = useState('Now');
+
+  // Date & Time State (Initialize with current local values for inputs)
+  const [selectedDate, setSelectedDate] = useState(() => new Date().toISOString().split('T')[0]);
+  const [selectedTime, setSelectedTime] = useState(() => {
+    const now = new Date();
+    return `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+  });
+
   const [isBooking, setIsBooking] = useState(false);
 
   // Auth & Guest State
@@ -34,13 +34,21 @@ const ClientHome: React.FC = () => {
   // Modals & Flows
   const [showGuestInfoModal, setShowGuestInfoModal] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [showAiModal, setShowAiModal] = useState(false);
+  const [showVoiceModal, setShowVoiceModal] = useState(false);
+
+  // New Generic Alert Modal State
+  const [alertModal, setAlertModal] = useState({ show: false, title: '', message: '' });
 
   // Guest Info Form
   const [guestName, setGuestName] = useState('');
   const [guestPhone, setGuestPhone] = useState('');
   const [guestEmail, setGuestEmail] = useState('');
 
-  // Payment State
+  // AI & Payment
+  const [aiQuery, setAiQuery] = useState('');
+  const [aiResponse, setAiResponse] = useState('');
+  const [loadingAi, setLoadingAi] = useState(false);
   const [selectedPayment, setSelectedPayment] = useState<'cash' | 'zelle' | 'card'>('cash');
 
   useEffect(() => {
@@ -75,12 +83,15 @@ const ClientHome: React.FC = () => {
           !data.phone ||
           data.phone === '000-000-0000' ||
           !data.email;
-
         if (isIncomplete) {
           setShowGuestInfoModal(true);
         }
       }
     }
+  };
+
+  const showAlert = (title: string, message: string) => {
+    setAlertModal({ show: true, title, message });
   };
 
   const handleAiAdvice = async () => {
@@ -92,21 +103,23 @@ const ClientHome: React.FC = () => {
   };
 
   const handleSeed = async () => {
+    // keeping native confirm for dev tools is fine, or switch if strictly requested. 
+    // User asked to fix alerts shown in captures (mostly user facing).
     if (confirm('Seed database with test data?')) {
       await seedDatabase();
-      alert('Database seeded!');
+      showAlert('Success', 'Database seeded!');
     }
   };
 
   // Step 1: Initiate Request
   const handleRequestRideClick = async () => {
     if (!pickup || !dropoff) {
-      alert('Please enter pickup and dropoff locations');
+      showAlert('Missing Information', 'Please enter pickup and dropoff locations');
       return;
     }
 
     if (!userId) {
-      alert('You must be logged in to request a ride.');
+      showAlert('Login Required', 'You must be logged in to request a ride.');
       navigate(ROUTES.LOGIN);
       return;
     }
@@ -116,7 +129,7 @@ const ClientHome: React.FC = () => {
       // Validate Limit
       const { count } = await supabase.from('bookings').select('id', { count: 'exact', head: true }).eq('client_id', userId);
       if ((count || 0) >= 3) {
-        alert('Guest Limit Reached.\n\nPlease sign up for a full account to enjoy unlimited premium travel.');
+        showAlert('Limit Reached', 'Guest Limit Reached.\n\nPlease sign up for a full account to enjoy unlimited premium travel.');
         return;
       }
 
@@ -133,7 +146,10 @@ const ClientHome: React.FC = () => {
 
   // Step 2: Save Guest Info (if needed)
   const handleSaveGuestInfo = async () => {
-    if (!guestName || !guestPhone || !guestEmail) return alert('Name, Phone and Email are required.');
+    if (!guestName || !guestPhone || !guestEmail) {
+      showAlert('Required Fields', 'Name, Phone and Email are required.');
+      return;
+    }
 
     try {
       const { error } = await supabase.from('clients').update({
@@ -149,7 +165,7 @@ const ClientHome: React.FC = () => {
       // We don't automatically open payment modal here per requirements, we return to booking screen.
     } catch (err) {
       console.error('Error saving info:', err);
-      alert('Could not save info. Please try again.');
+      showAlert('Error', 'Could not save info. Please try again.');
     }
   };
 
@@ -157,13 +173,16 @@ const ClientHome: React.FC = () => {
   const handleConfirmBooking = async () => {
     setIsBooking(true);
     try {
+      // Create a date object from inputs
+      const datetime = new Date(`${selectedDate}T${selectedTime}`);
+
       const { data, error } = await supabase
         .from('bookings')
         .insert({
           client_id: userId,
           pickup_address: pickup,
           dropoff_address: dropoff,
-          pickup_datetime: new Date().toISOString(), // In real app use selectedDate + selectedTime
+          pickup_datetime: datetime.toISOString(),
           passengers: passengers,
           status: 'requested',
           estimated_fare_min: 85,
@@ -179,14 +198,14 @@ const ClientHome: React.FC = () => {
       setShowPaymentModal(false);
 
       // Success Message (Toast substitute)
-      alert(`Booking Requested Successfully!\n\nBooking ID: ${data?.id}`);
+      showAlert('Booking Confirmed', `Your ride has been requested successfully!\n\nBooking ID: ${data?.id}`);
 
       // Do NOT navigate, stay on screen per instructions
       // navigate(ROUTES.CLIENT_RIDE_DETAIL.replace(':id', data.id));
 
     } catch (err) {
       console.error('Booking failed:', err);
-      alert('Failed to request ride. Please try again.');
+      showAlert('Booking Failed', 'Failed to request ride. Please try again.');
     } finally {
       setIsBooking(false);
     }
@@ -237,14 +256,17 @@ const ClientHome: React.FC = () => {
           </div>
 
           <div className="py-4">
-            <div className="flex h-12 w-full items-center justify-center rounded-xl bg-surface-dark p-1">
+            <div className="flex w-full items-center justify-between gap-2">
               {['Airport', 'Point to point', 'Hourly'].map((type) => {
                 const value = type.toLowerCase().replace(/ /g, '_');
+                const isActive = tripType === value;
                 return (
                   <button
                     key={value}
                     onClick={() => setTripType(value)}
-                    className={`flex-1 h-full rounded-lg text-sm font-semibold transition-all duration-300 ${tripType === value ? 'bg-primary text-background-dark' : 'text-text-subtle hover:text-white'
+                    className={`flex-1 h-12 rounded-xl text-xs sm:text-sm font-bold transition-all duration-300 border ${isActive
+                        ? 'bg-primary text-background-dark border-primary shadow-lg shadow-primary/20 scale-[1.02]'
+                        : 'bg-surface-dark text-text-subtle border-white/5 hover:border-white/20 hover:text-white'
                       }`}
                   >
                     {type}
@@ -295,10 +317,11 @@ const ClientHome: React.FC = () => {
                 <div className="flex w-full items-center rounded-xl bg-surface-dark border border-white/5 focus-within:border-primary/50 transition-colors h-14 px-4 cursor-pointer hover:bg-white/5 relative">
                   <span className="material-symbols-outlined text-primary text-[20px] mr-3">calendar_month</span>
                   <input
-                    type="text"
+                    type="date"
                     value={selectedDate}
                     onChange={(e) => setSelectedDate(e.target.value)}
-                    className="bg-transparent border-none text-white w-full h-full focus:ring-0 p-0 font-medium"
+                    className="bg-transparent border-none text-white w-full h-full focus:ring-0 p-0 font-medium color-scheme-dark text-sm sm:text-base"
+                    style={{ colorScheme: 'dark' }}
                   />
                 </div>
               </div>
@@ -307,10 +330,11 @@ const ClientHome: React.FC = () => {
                 <div className="flex w-full items-center rounded-xl bg-surface-dark border border-white/5 focus-within:border-primary/50 transition-colors h-14 px-4 cursor-pointer hover:bg-white/5 relative">
                   <span className="material-symbols-outlined text-primary text-[20px] mr-3">schedule</span>
                   <input
-                    type="text"
+                    type="time"
                     value={selectedTime}
                     onChange={(e) => setSelectedTime(e.target.value)}
-                    className="bg-transparent border-none text-white w-full h-full focus:ring-0 p-0 font-medium"
+                    className="bg-transparent border-none text-white w-full h-full focus:ring-0 p-0 font-medium color-scheme-dark text-sm sm:text-base"
+                    style={{ colorScheme: 'dark' }}
                   />
                 </div>
               </div>
@@ -366,6 +390,27 @@ const ClientHome: React.FC = () => {
             </div>
           </div>
         </main>
+
+        {/* --- GENERIC ALERT MODAL --- */}
+        {alertModal.show && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-6 animate-in fade-in duration-200">
+            <div className="bg-surface-dark w-full max-w-sm rounded-2xl p-6 border border-white/10 shadow-2xl animate-in zoom-in-95 leading-relaxed">
+              <div className="flex items-center gap-4 mb-4">
+                <div className="size-12 rounded-full bg-primary/20 flex items-center justify-center text-primary">
+                  <span className="material-symbols-outlined text-2xl">info</span>
+                </div>
+                <h3 className="text-xl font-bold text-white">{alertModal.title}</h3>
+              </div>
+              <p className="text-white/80 mb-8">{alertModal.message}</p>
+              <button
+                onClick={() => setAlertModal({ ...alertModal, show: false })}
+                className="w-full bg-[#f4c025] hover:bg-[#dcb010] text-[#181611] font-bold h-12 rounded-xl transition-colors"
+              >
+                Okay
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* --- GUEST INFO MODAL --- */}
         {showGuestInfoModal && (
