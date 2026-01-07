@@ -9,6 +9,7 @@ const LandingPage: React.FC = () => {
   const navigate = useNavigate();
   const [isQrEntry, setIsQrEntry] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [showModeSelector, setShowModeSelector] = useState(false);
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
@@ -90,46 +91,64 @@ const LandingPage: React.FC = () => {
             </p>
           </div>
           <div className="w-full pt-2">
-            {isQrEntry ? (
-              <>
-                <button
-                  onClick={handleGuestContinue}
-                  disabled={loading}
-                  className="group w-full flex items-center justify-center rounded-lg bg-primary h-[56px] px-6 text-[#181611] text-lg font-bold leading-normal tracking-wide shadow-[0_0_20px_-5px_rgba(244,192,37,0.3)] hover:shadow-[0_0_25px_-5px_rgba(244,192,37,0.5)] hover:bg-[#ffcd38] active:scale-[0.99] transition-all duration-300 disabled:opacity-70 disabled:cursor-not-allowed"
-                >
-                  {loading ? (
-                    <span className="size-5 border-2 border-[#181611] border-t-transparent rounded-full animate-spin"></span>
-                  ) : (
-                    <>
-                      <span className="truncate">Continue as Guest</span>
-                      <span className="material-symbols-outlined ml-2 text-[20px] transition-transform group-hover:translate-x-1">arrow_forward</span>
-                    </>
-                  )}
-                </button>
-                <div className="mt-4 flex justify-center">
-                  <Link to={ROUTES.LOGIN} className="w-full flex items-center justify-center rounded-lg border border-white/10 h-[56px] px-6 text-white text-lg font-medium hover:bg-white/5 transition-colors">
-                    Sign In to Account
-                  </Link>
-                </div>
-              </>
-            ) : (
-              <div className="space-y-3">
-                <Link to={ROUTES.LOGIN} className="group w-full flex items-center justify-center rounded-lg bg-[#f4c025] h-[56px] px-6 text-[#181611] text-lg font-bold leading-normal tracking-wide shadow-[0_0_20px_-5px_rgba(244,192,37,0.3)] hover:shadow-[0_0_25px_-5px_rgba(244,192,37,0.5)] hover:bg-[#dcb010] active:scale-[0.99] transition-all duration-300">
-                  <span className="truncate">Get started</span>
-                  <span className="material-symbols-outlined ml-2 text-[20px] transition-transform group-hover:translate-x-1">person</span>
-                </Link>
+            <div className="space-y-3">
+              <button
+                onClick={() => setShowModeSelector(true)}
+                className="group w-full flex items-center justify-center rounded-lg bg-[#f4c025] h-[56px] px-6 text-[#181611] text-lg font-bold leading-normal tracking-wide shadow-[0_0_20px_-5px_rgba(244,192,37,0.3)] hover:shadow-[0_0_25px_-5px_rgba(244,192,37,0.5)] hover:bg-[#dcb010] active:scale-[0.99] transition-all duration-300"
+              >
+                <span className="truncate">Get started</span>
+                <span className="material-symbols-outlined ml-2 text-[20px] transition-transform group-hover:translate-x-1">arrow_forward</span>
+              </button>
 
-                {/* Hidden/Subtle Admin Link for YOU */}
-                <div className="pt-4 flex justify-center opacity-20 hover:opacity-100 transition-opacity">
-                  <Link to={ROUTES.LOGIN} className="text-[10px] uppercase tracking-widest text-white/50">
-                    Staff Access
-                  </Link>
-                </div>
+              {/* Hidden/Subtle Admin Link for YOU */}
+              <div className="pt-4 flex justify-center opacity-20 hover:opacity-100 transition-opacity">
+                <Link to={ROUTES.LOGIN} className="text-[10px] uppercase tracking-widest text-white/50">
+                  Staff Access
+                </Link>
               </div>
-            )}
+            </div>
           </div>
         </div>
       </div>
+
+      {/* --- ENTRY MODE CHOOSER MODAL --- */}
+      {showModeSelector && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/80 backdrop-blur-sm p-4 sm:p-6 animate-in fade-in duration-300">
+          <div className="bg-surface-dark w-full max-w-sm rounded-2xl p-6 border border-white/10 shadow-2xl animate-in slide-in-from-bottom-10 sm:zoom-in-95">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-xl font-bold text-white">How would you like to start?</h3>
+              <button onClick={() => setShowModeSelector(false)} className="text-white/40 hover:text-white transition-colors">
+                <span className="material-symbols-outlined">close</span>
+              </button>
+            </div>
+
+            <p className="text-sm text-text-subtle mb-8 leading-relaxed">
+              You can book up to 3 rides as a guest, or create an account for unlimited bookings.
+            </p>
+
+            <div className="space-y-4">
+              <button
+                onClick={handleGuestContinue}
+                disabled={loading}
+                className="w-full flex items-center justify-center rounded-xl bg-surface-dark border border-primary h-[56px] px-6 text-white text-lg font-bold hover:bg-white/5 active:scale-[0.98] transition-all"
+              >
+                {loading ? (
+                  <span className="size-5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                ) : (
+                  <span>Continue as guest</span>
+                )}
+              </button>
+
+              <Link
+                to={ROUTES.LOGIN}
+                className="w-full flex items-center justify-center rounded-xl bg-primary h-[56px] px-6 text-background-dark text-lg font-bold hover:bg-primary-dark active:scale-[0.98] transition-all shadow-lg shadow-primary/20"
+              >
+                Create account
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
