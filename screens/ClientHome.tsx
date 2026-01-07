@@ -22,6 +22,8 @@ const ClientHome: React.FC = () => {
   // Form State
   const [pickup, setPickup] = useState('San Francisco Intl Airport');
   const [dropoff, setDropoff] = useState('');
+  const [selectedDate, setSelectedDate] = useState('Today');
+  const [selectedTime, setSelectedTime] = useState('Now');
   const [isBooking, setIsBooking] = useState(false);
 
   // Auth & Guest State
@@ -51,16 +53,33 @@ const ClientHome: React.FC = () => {
   }, []);
 
   const fetchUserProfile = async (id: string) => {
-    const { data } = await supabase.from('clients').select('is_guest, full_name, phone').eq('id', id).single();
+    const { data } = await supabase.from('clients').select('is_guest, full_name, phone, email').eq('id', id).single();
     if (data) {
       if (data.is_guest) setIsGuest(true);
-      if (data.full_name) {
-        setUserName(data.full_name.split(' ')[0]); // First name
-        if (data.full_name !== 'Guest Client') setGuestName(data.full_name);
+
+      // Populate local state
+      if (data.full_name && data.full_name !== 'Guest Client') {
+        setUserName(data.full_name.split(' ')[0]);
+        setGuestName(data.full_name);
       } else {
         setUserName('Guest');
       }
-      if (data.phone !== '000-000-0000') setGuestPhone(data.phone);
+
+      if (data.phone && data.phone !== '000-000-0000') setGuestPhone(data.phone);
+      if (data.email) setGuestEmail(data.email);
+
+      // Enforce Guest Profile Completion on Mount
+      if (data.is_guest) {
+        const isIncomplete = !data.full_name ||
+          data.full_name === 'Guest Client' ||
+          !data.phone ||
+          data.phone === '000-000-0000' ||
+          !data.email;
+
+        if (isIncomplete) {
+          setShowGuestInfoModal(true);
+        }
+      }
     }
   };
 
@@ -102,7 +121,7 @@ const ClientHome: React.FC = () => {
       }
 
       // Check if we have their info
-      if (!guestName || !guestPhone || guestName === 'Guest Client' || userName === 'Guest') {
+      if (!guestName || !guestPhone || !guestEmail || guestName === 'Guest Client' || userName === 'Guest') {
         setShowGuestInfoModal(true);
         return;
       }
@@ -114,20 +133,20 @@ const ClientHome: React.FC = () => {
 
   // Step 2: Save Guest Info (if needed)
   const handleSaveGuestInfo = async () => {
-    if (!guestName || !guestPhone) return alert('Name and Phone are required.');
+    if (!guestName || !guestPhone || !guestEmail) return alert('Name, Phone and Email are required.');
 
     try {
       const { error } = await supabase.from('clients').update({
         full_name: guestName,
         phone: guestPhone,
-        email: guestEmail || undefined
+        email: guestEmail
       }).eq('id', userId);
 
       if (error) throw error;
 
       setUserName(guestName.split(' ')[0]); // Update header instantly
       setShowGuestInfoModal(false);
-      setShowPaymentModal(true); // Continue flow
+      // We don't automatically open payment modal here per requirements, we return to booking screen.
     } catch (err) {
       console.error('Error saving info:', err);
       alert('Could not save info. Please try again.');
@@ -144,7 +163,7 @@ const ClientHome: React.FC = () => {
           client_id: userId,
           pickup_address: pickup,
           dropoff_address: dropoff,
-          pickup_datetime: new Date().toISOString(),
+          pickup_datetime: new Date().toISOString(), // In real app use selectedDate + selectedTime
           passengers: passengers,
           status: 'requested',
           estimated_fare_min: 85,
@@ -158,9 +177,12 @@ const ClientHome: React.FC = () => {
       if (error) throw error;
 
       setShowPaymentModal(false);
-      if (data) {
-        navigate(ROUTES.CLIENT_RIDE_DETAIL.replace(':id', data.id));
-      }
+
+      // Success Message (Toast substitute)
+      alert(`Booking Requested Successfully!\n\nBooking ID: ${data?.id}`);
+
+      // Do NOT navigate, stay on screen per instructions
+      // navigate(ROUTES.CLIENT_RIDE_DETAIL.replace(':id', data.id));
 
     } catch (err) {
       console.error('Booking failed:', err);
@@ -171,12 +193,11 @@ const ClientHome: React.FC = () => {
   };
 
   return (
-    <div className="bg-background-dark text-white font-display antialiased h-screen overflow-x-hidden pb-20">
+    <div className="bg-background-dark text-white font-display antialiased h-screen overflow-x-hidden pb-32">
       <div className="max-w-md mx-auto min-h-screen flex flex-col">
         <header className="flex items-center p-6 pb-2 justify-between">
-          {/* BRANDING UPDATE */}
           <div className="flex items-center gap-3">
-            <img src="/privaro_logo.png" alt="Privaro" className="h-10 w-auto object-contain" />
+            <img src="/logo-privaro.png" alt="Privaro" className="h-10 w-auto object-contain" />
             <div>
               <h1 className="text-white text-lg font-bold tracking-widest uppercase">PRIVARO</h1>
               <p className="text-[10px] text-primary tracking-[0.2em] uppercase">Luxe Ride</p>
@@ -210,7 +231,7 @@ const ClientHome: React.FC = () => {
           </div>
         </header>
 
-        <main className="flex-1 flex flex-col px-6 pb-32">
+        <main className="flex-1 flex flex-col px-6">
           <div className="py-4">
             <h2 className="text-white text-3xl font-bold leading-tight tracking-tight">Book your<br /><span className="text-white/50">private ride</span></h2>
           </div>
@@ -271,16 +292,26 @@ const ClientHome: React.FC = () => {
             <div className="flex gap-4">
               <div className="flex-1">
                 <label className="block text-text-subtle text-[10px] font-bold uppercase tracking-widest mb-2 ml-1">Date</label>
-                <div className="flex w-full items-center rounded-xl bg-surface-dark border border-white/5 focus-within:border-primary/50 transition-colors h-14 px-4 cursor-pointer hover:bg-white/5">
+                <div className="flex w-full items-center rounded-xl bg-surface-dark border border-white/5 focus-within:border-primary/50 transition-colors h-14 px-4 cursor-pointer hover:bg-white/5 relative">
                   <span className="material-symbols-outlined text-primary text-[20px] mr-3">calendar_month</span>
-                  <span className="text-white font-medium">Today</span>
+                  <input
+                    type="text"
+                    value={selectedDate}
+                    onChange={(e) => setSelectedDate(e.target.value)}
+                    className="bg-transparent border-none text-white w-full h-full focus:ring-0 p-0 font-medium"
+                  />
                 </div>
               </div>
               <div className="flex-1">
                 <label className="block text-text-subtle text-[10px] font-bold uppercase tracking-widest mb-2 ml-1">Time</label>
-                <div className="flex w-full items-center rounded-xl bg-surface-dark border border-white/5 focus-within:border-primary/50 transition-colors h-14 px-4 cursor-pointer hover:bg-white/5">
+                <div className="flex w-full items-center rounded-xl bg-surface-dark border border-white/5 focus-within:border-primary/50 transition-colors h-14 px-4 cursor-pointer hover:bg-white/5 relative">
                   <span className="material-symbols-outlined text-primary text-[20px] mr-3">schedule</span>
-                  <span className="text-white font-medium">Now</span>
+                  <input
+                    type="text"
+                    value={selectedTime}
+                    onChange={(e) => setSelectedTime(e.target.value)}
+                    className="bg-transparent border-none text-white w-full h-full focus:ring-0 p-0 font-medium"
+                  />
                 </div>
               </div>
             </div>
@@ -306,34 +337,35 @@ const ClientHome: React.FC = () => {
                 </button>
               </div>
             </div>
+
+            {/* MOVED: Estimated Fare & Request Button (In-flow) */}
+            <div className="mt-6 mb-10 w-full">
+              <div className="mb-5 bg-[#2A261A] rounded-xl p-4 border-l-4 border-[#f4c025] flex items-center justify-between shadow-lg backdrop-blur-sm border-white/5">
+                <div>
+                  <p className="text-text-subtle text-[10px] font-bold uppercase tracking-widest mb-1">Estimated Fare</p>
+                  <p className="text-white text-2xl font-bold tracking-tight">$85 – $110</p>
+                </div>
+                <div className="size-10 rounded-full bg-white/5 flex items-center justify-center">
+                  <span className="material-symbols-outlined text-primary">info</span>
+                </div>
+              </div>
+              <button
+                onClick={handleRequestRideClick}
+                disabled={isBooking}
+                className="w-full bg-[#f4c025] hover:bg-[#dcb010] active:scale-[0.98] text-[#181611] font-bold text-lg py-4 rounded-xl shadow-[0_0_25px_rgba(244,192,37,0.3)] transition-all flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+              >
+                {isBooking ? (
+                  <div className="size-6 border-2 border-background-dark border-t-transparent rounded-full animate-spin"></div>
+                ) : (
+                  <>
+                    <span>Request Ride</span>
+                    <span className="material-symbols-outlined text-xl">arrow_forward</span>
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </main>
-
-        <div className="fixed bottom-20 left-0 right-0 p-6 bg-gradient-to-t from-background-dark via-background-dark to-transparent max-w-md mx-auto z-10">
-          <div className="mb-5 bg-[#2A261A] rounded-xl p-4 border-l-4 border-primary flex items-center justify-between shadow-lg backdrop-blur-sm border-white/5">
-            <div>
-              <p className="text-text-subtle text-[10px] font-bold uppercase tracking-widest mb-1">Estimated Fare</p>
-              <p className="text-white text-2xl font-bold tracking-tight">$85 – $110</p>
-            </div>
-            <div className="size-10 rounded-full bg-white/5 flex items-center justify-center">
-              <span className="material-symbols-outlined text-primary">info</span>
-            </div>
-          </div>
-          <button
-            onClick={handleRequestRideClick}
-            disabled={isBooking}
-            className="w-full bg-primary hover:bg-primary-dark active:scale-[0.98] text-background-dark font-bold text-lg py-4 rounded-xl shadow-[0_0_25px_rgba(244,192,37,0.3)] transition-all flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
-          >
-            {isBooking ? (
-              <div className="size-6 border-2 border-background-dark border-t-transparent rounded-full animate-spin"></div>
-            ) : (
-              <>
-                <span>Request Ride</span>
-                <span className="material-symbols-outlined text-xl">arrow_forward</span>
-              </>
-            )}
-          </button>
-        </div>
 
         {/* --- GUEST INFO MODAL --- */}
         {showGuestInfoModal && (
@@ -364,7 +396,7 @@ const ClientHome: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <label className="text-xs uppercase font-bold text-text-subtle mb-1 block">Email (Optional)</label>
+                  <label className="text-xs uppercase font-bold text-text-subtle mb-1 block">Email (Required)</label>
                   <input
                     type="email"
                     value={guestEmail}
@@ -377,7 +409,7 @@ const ClientHome: React.FC = () => {
 
               <button
                 onClick={handleSaveGuestInfo}
-                className="w-full bg-primary text-background-dark font-bold h-12 rounded-xl mt-6 hover:bg-primary-dark"
+                className="w-full bg-[#f4c025] text-[#181611] font-bold h-12 rounded-xl mt-6 hover:bg-[#dcb010]"
               >
                 Continue
               </button>
@@ -450,7 +482,7 @@ const ClientHome: React.FC = () => {
               <button
                 onClick={handleConfirmBooking}
                 disabled={isBooking}
-                className="w-full bg-primary hover:bg-primary-dark text-background-dark font-bold text-lg py-4 rounded-xl shadow-lg flex items-center justify-center gap-2"
+                className="w-full bg-[#f4c025] hover:bg-[#dcb010] text-[#181611] font-bold text-lg py-4 rounded-xl shadow-lg flex items-center justify-center gap-2"
               >
                 {isBooking ? (
                   <div className="size-5 border-2 border-background-dark border-t-transparent rounded-full animate-spin"></div>
