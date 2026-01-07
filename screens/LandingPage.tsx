@@ -80,7 +80,7 @@ const LandingPage: React.FC = () => {
         <div className="flex flex-col items-center w-full space-y-8 mb-8">
           <div className="text-center space-y-3">
             <h2 className="text-white text-[26px] font-bold leading-tight tracking-wide">
-              {isQrEntry ? 'Welcome, Guest' : 'Your private chauffeur, on demand.'} <br />
+              {isQrEntry ? 'Welcome, Guest' : ''} {isQrEntry && <br />}
               <span className="text-white/90">{isQrEntry ? 'Ride in Style' : 'Scan, book and ride in executive class.'}</span>
             </h2>
             <p className="text-white/40 text-sm font-light leading-relaxed max-w-[280px] mx-auto">
@@ -114,7 +114,7 @@ const LandingPage: React.FC = () => {
               </>
             ) : (
               <div className="space-y-3">
-                <Link to={ROUTES.LOGIN} className="group w-full flex items-center justify-center rounded-lg bg-primary h-[56px] px-6 text-background-dark text-lg font-bold leading-normal tracking-wide shadow-[0_0_20px_-5px_rgba(244,192,37,0.3)] hover:shadow-[0_0_25px_-5px_rgba(244,192,37,0.5)] hover:bg-primary-dark active:scale-[0.99] transition-all duration-300">
+                <Link to={ROUTES.LOGIN} className="group w-full flex items-center justify-center rounded-lg bg-[#f4c025] h-[56px] px-6 text-[#181611] text-lg font-bold leading-normal tracking-wide shadow-[0_0_20px_-5px_rgba(244,192,37,0.3)] hover:shadow-[0_0_25px_-5px_rgba(244,192,37,0.5)] hover:bg-[#dcb010] active:scale-[0.99] transition-all duration-300">
                   <span className="truncate">Get started</span>
                   <span className="material-symbols-outlined ml-2 text-[20px] transition-transform group-hover:translate-x-1">person</span>
                 </Link>
