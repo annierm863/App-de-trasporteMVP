@@ -130,7 +130,7 @@ const LandingPage: React.FC = () => {
               <button
                 onClick={handleGuestContinue}
                 disabled={loading}
-                className="w-full flex items-center justify-center rounded-xl bg-surface-dark border border-primary h-[56px] px-6 text-white text-lg font-bold hover:bg-white/5 active:scale-[0.98] transition-all"
+                className="w-full flex items-center justify-center rounded-xl bg-surface-dark border border-[#f4c025] h-[56px] px-6 text-white text-lg font-bold hover:bg-white/5 active:scale-[0.98] transition-all"
               >
                 {loading ? (
                   <span className="size-5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
@@ -141,7 +141,7 @@ const LandingPage: React.FC = () => {
 
               <Link
                 to={ROUTES.LOGIN}
-                className="w-full flex items-center justify-center rounded-xl bg-primary h-[56px] px-6 text-background-dark text-lg font-bold hover:bg-primary-dark active:scale-[0.98] transition-all shadow-lg shadow-primary/20"
+                className="w-full flex items-center justify-center rounded-xl bg-[#f4c025] h-[56px] px-6 text-[#181611] text-lg font-bold hover:bg-[#dcb010] active:scale-[0.98] transition-all shadow-lg shadow-[#f4c025]/20"
               >
                 Create account
               </Link>
