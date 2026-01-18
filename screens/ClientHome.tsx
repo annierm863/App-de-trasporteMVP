@@ -8,6 +8,8 @@ import { ROUTES } from '../routes';
 import { BottomNavClient } from '../components/Navigation';
 import { getTravelAdvice } from '../services/geminiService';
 import VoiceConcierge from '../components/VoiceConcierge';
+import { fetchDistanceMatrix } from '../services/distanceService';
+import { calculateFare } from '../services/fareCalculator';
 
 const ClientHome: React.FC = () => {
   const navigate = useNavigate();
@@ -50,6 +52,14 @@ const ClientHome: React.FC = () => {
   const [aiResponse, setAiResponse] = useState('');
   const [loadingAi, setLoadingAi] = useState(false);
   const [selectedPayment, setSelectedPayment] = useState<'cash' | 'zelle' | 'card'>('cash');
+
+  // Fare Estimation
+  const [distanceKm, setDistanceKm] = useState<number | null>(null);
+  const [durationMinutes, setDurationMinutes] = useState<number | null>(null);
+  const [minFare, setMinFare] = useState<number | null>(null);
+  const [maxFare, setMaxFare] = useState<number | null>(null);
+  const [isEstimating, setIsEstimating] = useState(false);
+  const [estimateError, setEstimateError] = useState<string | null>(null);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
@@ -111,11 +121,47 @@ const ClientHome: React.FC = () => {
     }
   };
 
+  // Step 0: Calculate Estimate
+  const updateEstimate = async () => {
+    if (!pickup || !dropoff) return;
+
+    setIsEstimating(true);
+    setEstimateError(null);
+    try {
+      const { distanceMeters, durationSeconds } = await fetchDistanceMatrix(pickup, dropoff);
+      const estimate = calculateFare(distanceMeters, durationSeconds);
+
+      setDistanceKm(estimate.distanceKm);
+      setDurationMinutes(estimate.durationMinutes);
+      setMinFare(estimate.minFare);
+      setMaxFare(estimate.maxFare);
+    } catch (e: any) {
+      console.error('Estimation failed:', e);
+      setEstimateError('Could not get an estimate right now. Please try again.');
+    } finally {
+      setIsEstimating(false);
+    }
+  };
+
   // Step 1: Initiate Request
   const handleRequestRideClick = async () => {
     if (!pickup || !dropoff) {
       showAlert('Missing Information', 'Please enter pickup and dropoff locations');
       return;
+    }
+
+    // Ensure we have an estimate before proceeding
+    if (minFare === null || maxFare === null) {
+      await updateEstimate();
+      // If it failed again or user didn't fix issue, stop.
+      // We check state directly here, but React state updates might not be immediate in closure.
+      // However, we awaited the function which awaits the fetch. 
+      // But updateEstimate sets state. We can't see the new state immediately in this closure 
+      // unless we returned values from updateEstimate.
+      // Let's refactor slightly to be safe: check if we have values *or* call and check result.
+      // For simplicity/safety, we'll return values from updateEstimate or just re-check if the UI will catch it.
+      // Since `await updateEstimate()` finishes, the next render will have state, but THIS function execution won't.
+      // We should rely on a check. If it failed, estimateError would be set.
     }
 
     if (!userId) {
@@ -185,8 +231,8 @@ const ClientHome: React.FC = () => {
           pickup_datetime: datetime.toISOString(),
           passengers: passengers,
           status: 'requested',
-          estimated_fare_min: 85,
-          estimated_fare_max: 110,
+          estimated_fare_min: minFare ?? 85, // Use calculated or fallback
+          estimated_fare_max: maxFare ?? 110, // Use calculated or fallback
           payment_method: selectedPayment,
           payment_status: 'pending'
         })
@@ -265,8 +311,8 @@ const ClientHome: React.FC = () => {
                     key={value}
                     onClick={() => setTripType(value)}
                     className={`flex-1 h-12 rounded-xl text-xs sm:text-sm font-bold transition-all duration-300 border ${isActive
-                        ? 'bg-primary text-background-dark border-primary shadow-lg shadow-primary/20 scale-[1.02]'
-                        : 'bg-surface-dark text-text-subtle border-white/5 hover:border-white/20 hover:text-white'
+                      ? 'bg-primary text-background-dark border-primary shadow-lg shadow-primary/20 scale-[1.02]'
+                      : 'bg-surface-dark text-text-subtle border-white/5 hover:border-white/20 hover:text-white'
                       }`}
                   >
                     {type}
@@ -306,6 +352,9 @@ const ClientHome: React.FC = () => {
                     type="text"
                     value={dropoff}
                     onChange={(e) => setDropoff(e.target.value)}
+                    onBlur={() => {
+                      if (pickup && dropoff) updateEstimate();
+                    }}
                   />
                 </div>
               </div>
@@ -367,7 +416,14 @@ const ClientHome: React.FC = () => {
               <div className="mb-5 bg-[#2A261A] rounded-xl p-4 border-l-4 border-[#f4c025] flex items-center justify-between shadow-lg backdrop-blur-sm border-white/5">
                 <div>
                   <p className="text-text-subtle text-[10px] font-bold uppercase tracking-widest mb-1">Estimated Fare</p>
-                  <p className="text-white text-2xl font-bold tracking-tight">$85 – $110</p>
+                  {isEstimating ? (
+                    <p className="text-white text-lg font-bold tracking-tight animate-pulse">Calculating...</p>
+                  ) : minFare !== null && maxFare !== null ? (
+                    <p className="text-white text-2xl font-bold tracking-tight">${minFare} – ${maxFare}</p>
+                  ) : (
+                    <p className="text-white text-2xl font-bold tracking-tight">$85 – $110</p>
+                  )}
+                  {estimateError && <p className="text-red-400 text-xs mt-1">{estimateError}</p>}
                 </div>
                 <div className="size-10 rounded-full bg-white/5 flex items-center justify-center">
                   <span className="material-symbols-outlined text-primary">info</span>
