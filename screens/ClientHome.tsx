@@ -10,7 +10,8 @@ import { getTravelAdvice } from '../services/geminiService';
 import VoiceConcierge from '../components/VoiceConcierge';
 import { fetchDistanceMatrix } from '../services/distanceService';
 import { calculateFare } from '../services/fareCalculator';
-import { attachPlacesAutocomplete } from '../services/placesService';
+// import { attachPlacesAutocomplete } from '../services/placesService'; // DEPRECATED
+import PlacesAutocompleteInput from '../components/PlacesAutocompleteInput';
 
 const ClientHome: React.FC = () => {
   const navigate = useNavigate();
@@ -62,8 +63,8 @@ const ClientHome: React.FC = () => {
   const [isEstimating, setIsEstimating] = useState(false);
   const [estimateError, setEstimateError] = useState<string | null>(null);
 
-  const pickupInputRef = useRef<HTMLInputElement>(null);
-  const dropoffInputRef = useRef<HTMLInputElement>(null);
+  // const pickupInputRef = useRef<HTMLInputElement>(null); // Removed, using component
+  // const dropoffInputRef = useRef<HTMLInputElement>(null); // Removed, using component
   const latestPickup = useRef(pickup);
   const latestDropoff = useRef(dropoff);
 
@@ -77,21 +78,6 @@ const ClientHome: React.FC = () => {
         fetchUserProfile(data.user.id);
       }
     });
-
-    if (pickupInputRef.current) {
-      attachPlacesAutocomplete(pickupInputRef.current, (addr) => {
-        setPickup(addr);
-        // Use timeout to ensure state update? No, use override args in updateEstimate
-        updateEstimate(addr, undefined);
-      });
-    }
-
-    if (dropoffInputRef.current) {
-      attachPlacesAutocomplete(dropoffInputRef.current, (addr) => {
-        setDropoff(addr);
-        updateEstimate(undefined, addr);
-      });
-    }
   }, []);
 
   const fetchUserProfile = async (id: string) => {
@@ -359,13 +345,12 @@ const ClientHome: React.FC = () => {
                   <div className="flex items-center justify-center pl-4 pr-3 text-primary">
                     <span className="material-symbols-outlined filled text-[20px]">my_location</span>
                   </div>
-                  <input
-                    ref={pickupInputRef}
+                  <PlacesAutocompleteInput
                     className="w-full bg-transparent border-none text-white placeholder-text-subtle/50 h-14 focus:ring-0 text-base font-medium"
                     placeholder="Pickup address"
-                    type="text"
                     value={pickup}
-                    onChange={(e) => setPickup(e.target.value)}
+                    onChange={setPickup}
+                    onSelect={(addr) => updateEstimate(addr, undefined)}
                   />
                 </div>
               </div>
