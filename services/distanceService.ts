@@ -4,6 +4,48 @@ export interface DistanceResult {
     durationSeconds: number;
 }
 
+// Declare google namespace to avoid TypeScript errors if types are missing
+declare const google: any;
+
+let isScriptLoaded = false;
+let scriptPromise: Promise<void> | null = null;
+
+const loadGoogleMapsScript = (apiKey: string): Promise<void> => {
+    if (isScriptLoaded) return Promise.resolve();
+    // Check if already on window (some other component might have loaded it)
+    if ((window as any).google?.maps) {
+        isScriptLoaded = true;
+        return Promise.resolve();
+    }
+    if (scriptPromise) return scriptPromise;
+
+    scriptPromise = new Promise((resolve, reject) => {
+        // Double check inside promise
+        if ((window as any).google?.maps) {
+            isScriptLoaded = true;
+            resolve();
+            return;
+        }
+
+        const script = document.createElement('script');
+        script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places`; // libraries optional
+        script.async = true;
+        script.defer = true;
+        script.onload = () => {
+            isScriptLoaded = true;
+            resolve();
+        };
+        script.onerror = (err) => {
+            scriptPromise = null; // enable retry
+            console.error('Google Maps Load Error:', err);
+            reject(new Error('Failed to load Google Maps API'));
+        };
+        document.head.appendChild(script);
+    });
+
+    return scriptPromise;
+};
+
 export async function fetchDistanceMatrix(
     origin: string,
     destination: string
@@ -12,55 +54,64 @@ export async function fetchDistanceMatrix(
 
     if (!apiKey) {
         console.warn('VITE_GOOGLE_MAPS_API_KEY is missing. Using mock data.');
-        // Return a mock result so the app doesn't crash locally without the key
-        // Simulating ~20km and 30 mins
         return new Promise((resolve) => {
             setTimeout(() => {
                 resolve({
-                    distanceMeters: 20000,
-                    durationSeconds: 1800,
+                    distanceMeters: 20000, // 20 km
+                    durationSeconds: 1800, // 30 mins
                 });
             }, 1000);
         });
     }
 
-    // Use a proxy URL if needed, but for now we'll try direct call.
-    // Note: Client-side calls to Google Maps Web Service APIs generally need a proxy to avoid CORS
-    // unless the specific API allows it or a proxy is set up in Vite.
-    // The user asked to call https://maps.googleapis.com/maps/api/distancematrix/json directly.
-    // This often fails with CORS in browsers. 
-    // However, I will implement as requested. If I encounter CORS issues I might need to suggest a proxy.
-    // Actually, standard Maps JavaScript API is client side, but Distance Matrix Web Service is server-side usually,
-    // or checks referers.
-
-    const url = `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${encodeURIComponent(
-        origin
-    )}&destinations=${encodeURIComponent(
-        destination
-    )}&mode=driving&units=metric&key=${apiKey}`;
-
+    // 1. Ensure the JS API is loaded
     try {
-        const response = await fetch(url);
-        const data = await response.json();
-
-        if (data.status !== 'OK') {
-            throw new Error(`Distance Matrix API Error: ${data.status} - ${data.error_message || ''}`);
-        }
-
-        const row = data.rows[0];
-        if (!row) throw new Error('No rows in response');
-
-        const element = row.elements[0];
-        if (element.status !== 'OK') {
-            throw new Error(`Route not found: ${element.status}`);
-        }
-
-        return {
-            distanceMeters: element.distance.value,
-            durationSeconds: element.duration.value,
-        };
+        await loadGoogleMapsScript(apiKey);
     } catch (error) {
-        console.error('Error fetching distance matrix:', error);
+        // If script loading fails, we can either throw or return mock/empty. Throwing makes sure user knows info is invalid.
         throw error;
     }
+
+    // 2. Use the DistanceMatrixService
+    return new Promise((resolve, reject) => {
+        if (!google?.maps?.DistanceMatrixService) {
+            reject(new Error('Google Maps DistanceMatrixService not available'));
+            return;
+        }
+
+        const service = new google.maps.DistanceMatrixService();
+        service.getDistanceMatrix(
+            {
+                origins: [origin],
+                destinations: [destination],
+                travelMode: google.maps.TravelMode.DRIVING,
+                unitSystem: google.maps.UnitSystem.METRIC,
+            },
+            (response: any, status: any) => {
+                if (status !== 'OK') {
+                    reject(new Error(`Distance Matrix API Error: ${status}`));
+                    return;
+                }
+
+                const row = response.rows[0];
+                if (!row) {
+                    reject(new Error('No rows in response'));
+                    return;
+                }
+
+                const element = row.elements[0];
+                if (element.status !== 'OK') {
+                    // element.status can be ZERO_RESULTS, NOT_FOUND, etc.
+                    reject(new Error(`Route status: ${element.status}`));
+                    return;
+                }
+
+                // JS API returns .value which is number
+                resolve({
+                    distanceMeters: element.distance.value,
+                    durationSeconds: element.duration.value,
+                });
+            }
+        );
+    });
 }
