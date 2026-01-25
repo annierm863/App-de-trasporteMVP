@@ -10,7 +10,7 @@ declare const google: any;
 let isScriptLoaded = false;
 let scriptPromise: Promise<void> | null = null;
 
-const loadGoogleMapsScript = (apiKey: string): Promise<void> => {
+export const loadGoogleMapsScript = (apiKey: string): Promise<void> => {
     if (isScriptLoaded) return Promise.resolve();
     // Check if already on window (some other component might have loaded it)
     if ((window as any).google?.maps) {

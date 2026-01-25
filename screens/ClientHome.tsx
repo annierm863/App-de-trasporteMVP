@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../services/supabase';
@@ -10,13 +10,14 @@ import { getTravelAdvice } from '../services/geminiService';
 import VoiceConcierge from '../components/VoiceConcierge';
 import { fetchDistanceMatrix } from '../services/distanceService';
 import { calculateFare } from '../services/fareCalculator';
+import { attachPlacesAutocomplete } from '../services/placesService';
 
 const ClientHome: React.FC = () => {
   const navigate = useNavigate();
   // Form State
   const [tripType, setTripType] = useState('point_to_point');
   const [passengers, setPassengers] = useState(2);
-  const [pickup, setPickup] = useState('San Francisco Intl Airport');
+  const [pickup, setPickup] = useState('');
   const [dropoff, setDropoff] = useState('');
 
   // Date & Time State (Initialize with current local values for inputs)
@@ -61,6 +62,14 @@ const ClientHome: React.FC = () => {
   const [isEstimating, setIsEstimating] = useState(false);
   const [estimateError, setEstimateError] = useState<string | null>(null);
 
+  const pickupInputRef = useRef<HTMLInputElement>(null);
+  const dropoffInputRef = useRef<HTMLInputElement>(null);
+  const latestPickup = useRef(pickup);
+  const latestDropoff = useRef(dropoff);
+
+  useEffect(() => { latestPickup.current = pickup; }, [pickup]);
+  useEffect(() => { latestDropoff.current = dropoff; }, [dropoff]);
+
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
       if (data.user) {
@@ -68,6 +77,21 @@ const ClientHome: React.FC = () => {
         fetchUserProfile(data.user.id);
       }
     });
+
+    if (pickupInputRef.current) {
+      attachPlacesAutocomplete(pickupInputRef.current, (addr) => {
+        setPickup(addr);
+        // Use timeout to ensure state update? No, use override args in updateEstimate
+        updateEstimate(addr, undefined);
+      });
+    }
+
+    if (dropoffInputRef.current) {
+      attachPlacesAutocomplete(dropoffInputRef.current, (addr) => {
+        setDropoff(addr);
+        updateEstimate(undefined, addr);
+      });
+    }
   }, []);
 
   const fetchUserProfile = async (id: string) => {
@@ -122,13 +146,17 @@ const ClientHome: React.FC = () => {
   };
 
   // Step 0: Calculate Estimate
-  const updateEstimate = async () => {
-    if (!pickup || !dropoff) return;
+  const updateEstimate = async (pickupOverride?: string, dropoffOverride?: string) => {
+    // Resolve effective values: override -> ref (current) -> state (fallback)
+    const p = pickupOverride ?? latestPickup.current;
+    const d = dropoffOverride ?? latestDropoff.current;
+
+    if (!p || !d) return;
 
     setIsEstimating(true);
     setEstimateError(null);
     try {
-      const { distanceMeters, durationSeconds } = await fetchDistanceMatrix(pickup, dropoff);
+      const { distanceMeters, durationSeconds } = await fetchDistanceMatrix(p, d);
       const estimate = calculateFare(distanceMeters, durationSeconds);
 
       setDistanceKm(estimate.distanceKm);
@@ -332,8 +360,9 @@ const ClientHome: React.FC = () => {
                     <span className="material-symbols-outlined filled text-[20px]">my_location</span>
                   </div>
                   <input
+                    ref={pickupInputRef}
                     className="w-full bg-transparent border-none text-white placeholder-text-subtle/50 h-14 focus:ring-0 text-base font-medium"
-                    placeholder="Current Location"
+                    placeholder="Pickup address"
                     type="text"
                     value={pickup}
                     onChange={(e) => setPickup(e.target.value)}
@@ -347,13 +376,15 @@ const ClientHome: React.FC = () => {
                     <span className="material-symbols-outlined text-[20px]">location_on</span>
                   </div>
                   <input
+                    ref={dropoffInputRef}
                     className="w-full bg-transparent border-none text-white placeholder-text-subtle/50 h-14 focus:ring-0 text-base font-medium"
-                    placeholder="Where to?"
+                    placeholder="Dropoff address"
                     type="text"
                     value={dropoff}
                     onChange={(e) => setDropoff(e.target.value)}
                     onBlur={() => {
-                      if (pickup && dropoff) updateEstimate();
+                      // Trigger estimate on blur using current values
+                      updateEstimate();
                     }}
                   />
                 </div>
