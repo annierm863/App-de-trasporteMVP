@@ -147,8 +147,8 @@ const ClientHome: React.FC = () => {
 
       setDistanceKm(estimate.distanceKm);
       setDurationMinutes(estimate.durationMinutes);
-      setMinFare(estimate.minFare);
-      setMaxFare(estimate.maxFare);
+      setMinFare(estimate.fare);
+      setMaxFare(estimate.fare);
     } catch (e: any) {
       console.error('Estimation failed:', e);
       setEstimateError('Could not get an estimate right now. Please try again.');
@@ -360,17 +360,12 @@ const ClientHome: React.FC = () => {
                   <div className="flex items-center justify-center pl-4 pr-3 text-white/40 group-focus-within:text-primary">
                     <span className="material-symbols-outlined text-[20px]">location_on</span>
                   </div>
-                  <input
-                    ref={dropoffInputRef}
+                  <PlacesAutocompleteInput
                     className="w-full bg-transparent border-none text-white placeholder-text-subtle/50 h-14 focus:ring-0 text-base font-medium"
                     placeholder="Dropoff address"
-                    type="text"
                     value={dropoff}
-                    onChange={(e) => setDropoff(e.target.value)}
-                    onBlur={() => {
-                      // Trigger estimate on blur using current values
-                      updateEstimate();
-                    }}
+                    onChange={setDropoff}
+                    onSelect={(addr) => updateEstimate(undefined, addr)}
                   />
                 </div>
               </div>
@@ -420,7 +415,7 @@ const ClientHome: React.FC = () => {
                 <span className="text-white font-bold w-4 text-center">{passengers}</span>
                 <button
                   onClick={() => setPassengers(passengers + 1)}
-                  className="size-8 flex items-center justify-center rounded-md bg-primary text-black hover:bg-primary/90 active:scale-95 transition-all"
+                  className="size-8 flex items-center justify-center rounded-md bg-[#f4c025] text-black hover:bg-[#dcb010] active:scale-95 transition-all"
                 >
                   <span className="material-symbols-outlined text-sm">add</span>
                 </button>
@@ -434,10 +429,10 @@ const ClientHome: React.FC = () => {
                   <p className="text-text-subtle text-[10px] font-bold uppercase tracking-widest mb-1">Estimated Fare</p>
                   {isEstimating ? (
                     <p className="text-white text-lg font-bold tracking-tight animate-pulse">Calculating...</p>
-                  ) : minFare !== null && maxFare !== null ? (
-                    <p className="text-white text-2xl font-bold tracking-tight">${minFare} – ${maxFare}</p>
+                  ) : minFare !== null ? (
+                    <p className="text-white text-2xl font-bold tracking-tight">${minFare}</p>
                   ) : (
-                    <p className="text-white text-2xl font-bold tracking-tight">$85 – $110</p>
+                    <p className="text-white text-2xl font-bold tracking-tight">$85</p>
                   )}
                   {estimateError && <p className="text-red-400 text-xs mt-1">{estimateError}</p>}
                 </div>

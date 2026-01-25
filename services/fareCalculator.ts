@@ -2,8 +2,7 @@
 export interface FareEstimate {
     distanceKm: number;
     durationMinutes: number;
-    minFare: number;
-    maxFare: number;
+    fare: number;
 }
 
 export function calculateFare(
@@ -22,14 +21,12 @@ export function calculateFare(
         distanceKm * PRICE_PER_KM +
         durationMinutes * PRICE_PER_MIN;
 
-    // Apply min/max spread and round to whole dollars
-    const minFare = Math.round(rawEstimate * 0.9);
-    const maxFare = Math.round(rawEstimate * 1.1);
+    // Return exact rounded fare
+    const fare = Math.round(rawEstimate);
 
     return {
         distanceKm: parseFloat(distanceKm.toFixed(2)),
         durationMinutes: Math.round(durationMinutes),
-        minFare,
-        maxFare,
+        fare,
     };
 }
