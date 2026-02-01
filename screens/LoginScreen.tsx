@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { supabase } from '../services/supabase';
 import { ROUTES } from '../routes';
+import Modal from '../components/Modal';
 
 const LoginScreen: React.FC = () => {
   const navigate = useNavigate();
@@ -11,6 +12,9 @@ const LoginScreen: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
+
+  // Modal State
+  const [modal, setModal] = useState({ isOpen: false, title: '', message: '', type: 'info' as 'info' | 'success' | 'error' });
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -22,7 +26,17 @@ const LoginScreen: React.FC = () => {
           password,
         });
         if (error) throw error;
-        alert('Check your email for the confirmation link!');
+
+        // Success: Clear fields, Show Modal, Switch to Login
+        setEmail('');
+        setPassword('');
+        setIsSignUp(false);
+        setModal({
+          isOpen: true,
+          title: 'Success',
+          message: 'Account created! Please check your email to confirm your account before logging in.',
+          type: 'success'
+        });
       } else {
         const { error } = await supabase.auth.signInWithPassword({
           email,
@@ -32,7 +46,12 @@ const LoginScreen: React.FC = () => {
         navigate(ROUTES.CLIENT_HOME);
       }
     } catch (error: any) {
-      alert(error.message);
+      setModal({
+        isOpen: true,
+        title: 'Error',
+        message: error.message || 'An error occurred during authentication.',
+        type: 'error'
+      });
     } finally {
       setLoading(false);
     }
@@ -40,6 +59,14 @@ const LoginScreen: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-background-dark flex flex-col items-center justify-center p-6 text-white font-display">
+      <Modal
+        isOpen={modal.isOpen}
+        onClose={() => setModal({ ...modal, isOpen: false })}
+        title={modal.title}
+        message={modal.message}
+        type={modal.type}
+      />
+
       <div className="w-full max-w-md space-y-8">
         <div className="flex flex-col items-center">
           <img src="/logo-privaro.png" alt="Privaro" className="h-24 w-auto object-contain mb-4" />

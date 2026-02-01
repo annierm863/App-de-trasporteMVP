@@ -18,6 +18,7 @@ const ClientHome: React.FC = () => {
   // Form State
   const [tripType, setTripType] = useState('point_to_point');
   const [passengers, setPassengers] = useState(2);
+  const [luggage, setLuggage] = useState(2); // Default to 2
   const [pickup, setPickup] = useState('');
   const [dropoff, setDropoff] = useState('');
 
@@ -244,6 +245,7 @@ const ClientHome: React.FC = () => {
           dropoff_address: dropoff,
           pickup_datetime: datetime.toISOString(),
           passengers: passengers,
+          // luggage_count: luggage, // Note: DB column might be missing, adding for completeness if supported
           status: 'requested',
           estimated_fare_min: minFare ?? 85, // Use calculated or fallback
           estimated_fare_max: maxFare ?? 110, // Use calculated or fallback
@@ -253,12 +255,14 @@ const ClientHome: React.FC = () => {
         .select()
         .single();
 
+
       if (error) throw error;
 
       setShowPaymentModal(false);
 
       // Success Message (Toast substitute)
-      showAlert('Booking Confirmed', `Your ride has been requested successfully!\n\nBooking ID: ${data?.id}`);
+      const shortId = data?.id ? data.id.split('-')[0].toUpperCase() : '---';
+      showAlert('Booking Confirmed', `Your ride has been requested successfully!\n\nBooking ID: ${shortId}`);
 
       // Do NOT navigate, stay on screen per instructions
       // navigate(ROUTES.CLIENT_RIDE_DETAIL.replace(':id', data.id));
@@ -400,25 +404,53 @@ const ClientHome: React.FC = () => {
               </div>
             </div>
 
-            <div className="flex items-center justify-between p-4 rounded-xl bg-surface-dark border border-white/5">
-              <div className="flex items-center gap-3">
-                <span className="material-symbols-outlined text-text-subtle">group</span>
-                <span className="text-white font-medium">Passengers</span>
+            <div className="flex gap-4">
+              <div className="flex-1 flex items-center justify-between p-4 rounded-xl bg-surface-dark border border-white/5">
+                <div className="flex items-center gap-3">
+                  <span className="material-symbols-outlined text-text-subtle">group</span>
+                  <div className="flex flex-col">
+                    <span className="text-white font-medium text-sm">Passengers</span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 bg-background-dark rounded-lg p-1">
+                  <button
+                    onClick={() => setPassengers(Math.max(1, passengers - 1))}
+                    className="size-8 flex items-center justify-center rounded-md bg-white/5 text-white hover:bg-white/10 active:scale-95 transition-all"
+                  >
+                    <span className="material-symbols-outlined text-sm">remove</span>
+                  </button>
+                  <span className="text-white font-bold w-4 text-center">{passengers}</span>
+                  <button
+                    onClick={() => setPassengers(passengers + 1)}
+                    className="size-8 flex items-center justify-center rounded-md bg-[#f4c025] text-black hover:bg-[#dcb010] active:scale-95 transition-all"
+                  >
+                    <span className="material-symbols-outlined text-sm">add</span>
+                  </button>
+                </div>
               </div>
-              <div className="flex items-center gap-4 bg-background-dark rounded-lg p-1">
-                <button
-                  onClick={() => setPassengers(Math.max(1, passengers - 1))}
-                  className="size-8 flex items-center justify-center rounded-md bg-white/5 text-white hover:bg-white/10 active:scale-95 transition-all"
-                >
-                  <span className="material-symbols-outlined text-sm">remove</span>
-                </button>
-                <span className="text-white font-bold w-4 text-center">{passengers}</span>
-                <button
-                  onClick={() => setPassengers(passengers + 1)}
-                  className="size-8 flex items-center justify-center rounded-md bg-[#f4c025] text-black hover:bg-[#dcb010] active:scale-95 transition-all"
-                >
-                  <span className="material-symbols-outlined text-sm">add</span>
-                </button>
+
+              <div className="flex-1 flex items-center justify-between p-4 rounded-xl bg-surface-dark border border-white/5">
+                <div className="flex items-center gap-3">
+                  <span className="material-symbols-outlined text-text-subtle">luggage</span>
+                  <div className="flex flex-col">
+                    <span className="text-white font-medium text-sm">Luggage</span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 bg-background-dark rounded-lg p-1">
+                  <button
+                    onClick={() => setLuggage(Math.max(0, luggage - 1))}
+                    className="size-8 flex items-center justify-center rounded-md bg-white/5 text-white hover:bg-white/10 active:scale-95 transition-all"
+                  >
+                    <span className="material-symbols-outlined text-sm">remove</span>
+                  </button>
+                  <span className="text-white font-bold w-4 text-center">{luggage}</span>
+                  <button
+                    onClick={() => setLuggage(luggage + 1)}
+                    className="size-8 flex items-center justify-center rounded-md bg-[#f4c025] text-black hover:bg-[#dcb010] active:scale-95 transition-all"
+                  >
+                    <span className="material-symbols-outlined text-sm">add</span>
+                  </button>
+                </div>
               </div>
             </div>
 
