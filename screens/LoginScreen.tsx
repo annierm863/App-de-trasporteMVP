@@ -8,6 +8,7 @@ const LoginScreen: React.FC = () => {
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
 
@@ -41,13 +42,26 @@ const LoginScreen: React.FC = () => {
     <div className="min-h-screen bg-background-dark flex flex-col items-center justify-center p-6 text-white font-display">
       <div className="w-full max-w-md space-y-8">
         <div className="flex flex-col items-center">
-          <img src="/privaro_logo.png" alt="Privaro" className="h-16 w-auto object-contain mb-4" />
+          <img src="/logo-privaro.png" alt="Privaro" className="h-24 w-auto object-contain mb-4" />
           <h2 className="text-3xl font-bold tracking-tight text-white">
             {isSignUp ? 'Create an account' : 'Sign in to your account'}
           </h2>
-          <p className="mt-2 text-sm text-text-subtle">
-            Or <button onClick={() => setIsSignUp(!isSignUp)} className="font-medium text-primary hover:text-primary-dark transition-colors">{isSignUp ? 'sign in to existing account' : 'create a new account'}</button>
-          </p>
+          <div className="mt-4 flex items-center justify-center space-x-2 bg-surface-dark/50 p-1 rounded-full border border-white/5">
+            <button
+              onClick={() => setIsSignUp(false)}
+              className={`px-4 py-2 text-sm font-medium rounded-full transition-all ${!isSignUp ? 'bg-primary text-background-dark shadow-lg' : 'text-text-subtle hover:text-white'
+                }`}
+            >
+              Sign In
+            </button>
+            <button
+              onClick={() => setIsSignUp(true)}
+              className={`px-4 py-2 text-sm font-medium rounded-full transition-all ${isSignUp ? 'bg-primary text-background-dark shadow-lg' : 'text-text-subtle hover:text-white'
+                }`}
+            >
+              Create Account
+            </button>
+          </div>
         </div>
 
         <form className="mt-8 space-y-6" onSubmit={handleAuth}>
@@ -66,12 +80,12 @@ const LoginScreen: React.FC = () => {
                 placeholder="Email address"
               />
             </div>
-            <div>
+            <div className="relative">
               <label htmlFor="password" className="sr-only">Password</label>
               <input
                 id="password"
                 name="password"
-                type="password"
+                type={showPassword ? "text" : "password"}
                 autoComplete="current-password"
                 required
                 value={password}
@@ -79,6 +93,15 @@ const LoginScreen: React.FC = () => {
                 className="relative block w-full rounded-xl border-0 bg-surface-dark py-4 px-4 text-white ring-1 ring-inset ring-white/10 placeholder:text-white/50 focus:z-10 focus:ring-2 focus:ring-inset focus:ring-primary sm:text-sm sm:leading-6 transition-all"
                 placeholder="Password"
               />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute inset-y-0 right-0 flex items-center pr-3 z-20 text-white/50 hover:text-white transition-colors cursor-pointer"
+              >
+                <span className="material-symbols-outlined">
+                  {showPassword ? 'visibility_off' : 'visibility'}
+                </span>
+              </button>
             </div>
           </div>
 
