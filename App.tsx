@@ -19,6 +19,7 @@ import AdminClientDetail from './screens/AdminClientDetail';
 import AdminRates from './screens/AdminRates';
 import AdminRateDetail from './screens/AdminRateDetail';
 import AdminSettings from './screens/AdminSettings';
+import AdminLogin from './screens/AdminLogin';
 import DriverProfile from './screens/DriverProfile';
 
 const App: React.FC = () => {
@@ -40,6 +41,7 @@ const App: React.FC = () => {
           <Route path={ROUTES.CLIENT_TERMS} element={<TermsPage />} />
 
           {/* Admin Routes */}
+          <Route path={ROUTES.ADMIN_LOGIN} element={<AdminLogin />} />
           <Route path={ROUTES.ADMIN_DASHBOARD} element={<AdminDashboard />} />
           <Route path={ROUTES.ADMIN_BOOKINGS} element={<AdminBookings />} />
           <Route path={ROUTES.ADMIN_BOOKING_DETAIL} element={<AdminBookingDetail />} />

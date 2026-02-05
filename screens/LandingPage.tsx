@@ -102,7 +102,7 @@ const LandingPage: React.FC = () => {
 
               {/* Hidden/Subtle Admin Link for YOU */}
               <div className="pt-4 flex justify-center opacity-20 hover:opacity-100 transition-opacity">
-                <Link to={ROUTES.LOGIN} className="text-[10px] uppercase tracking-widest text-white/50">
+                <Link to={ROUTES.ADMIN_LOGIN} className="text-[10px] uppercase tracking-widest text-white/50">
                   Staff Access
                 </Link>
               </div>
