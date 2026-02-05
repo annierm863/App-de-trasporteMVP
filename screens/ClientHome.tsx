@@ -464,7 +464,7 @@ const ClientHome: React.FC = () => {
                   ) : minFare !== null ? (
                     <p className="text-white text-2xl font-bold tracking-tight">${minFare}</p>
                   ) : (
-                    <p className="text-white text-2xl font-bold tracking-tight">$85</p>
+                    <p className="text-white text-2xl font-bold tracking-tight">$0</p>
                   )}
                   {estimateError && <p className="text-red-400 text-xs mt-1">{estimateError}</p>}
                 </div>

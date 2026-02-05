@@ -46,10 +46,23 @@ const LoginScreen: React.FC = () => {
         navigate(ROUTES.CLIENT_HOME);
       }
     } catch (error: any) {
+      console.error("Auth error:", error);
+      let msg = error.message || 'An error occurred during authentication.';
+
+      // Handle the specific "Email not confirmed" case which often comes as 400 Bad Request
+      if (msg.includes("Email not confirmed") || (error.status === 400 && msg === "Invalid login credentials")) {
+        // Sometimes Supabase returns "Invalid login credentials" for unverified emails too, 
+        // but strictly "Email not confirmed" is ideal.
+        // Let's make it generic but helpful if it's a 400 on login
+        if (isSignUp === false) {
+          msg = "Login failed. Please check your credentials or ensure your email is verified.";
+        }
+      }
+
       setModal({
         isOpen: true,
         title: 'Error',
-        message: error.message || 'An error occurred during authentication.',
+        message: msg,
         type: 'error'
       });
     } finally {
@@ -76,14 +89,14 @@ const LoginScreen: React.FC = () => {
           <div className="mt-4 flex items-center justify-center space-x-2 bg-surface-dark/50 p-1 rounded-full border border-white/5">
             <button
               onClick={() => setIsSignUp(false)}
-              className={`px-4 py-2 text-sm font-medium rounded-full transition-all ${!isSignUp ? 'bg-primary text-background-dark shadow-lg' : 'text-text-subtle hover:text-white'
+              className={`px-4 py-2 text-sm font-medium rounded-full transition-all ${!isSignUp ? 'bg-[#f4c025] text-[#181611] shadow-lg font-bold' : 'text-[#bab29c] hover:text-white'
                 }`}
             >
               Sign In
             </button>
             <button
               onClick={() => setIsSignUp(true)}
-              className={`px-4 py-2 text-sm font-medium rounded-full transition-all ${isSignUp ? 'bg-primary text-background-dark shadow-lg' : 'text-text-subtle hover:text-white'
+              className={`px-4 py-2 text-sm font-medium rounded-full transition-all ${isSignUp ? 'bg-[#f4c025] text-[#181611] shadow-lg font-bold' : 'text-[#bab29c] hover:text-white'
                 }`}
             >
               Create Account
