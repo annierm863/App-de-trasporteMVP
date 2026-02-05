@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { supabase } from '../services/supabase';
 import { ROUTES } from '../routes';
@@ -13,9 +13,51 @@ const LoginScreen: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
   const [isResetPassword, setIsResetPassword] = useState(false);
+  const [isUpdatePassword, setIsUpdatePassword] = useState(false);
 
   // Modal State
+
   const [modal, setModal] = useState({ isOpen: false, title: '', message: '', type: 'info' as 'info' | 'success' | 'error' });
+
+  useEffect(() => {
+    supabase.auth.onAuthStateChange(async (event) => {
+      if (event === "PASSWORD_RECOVERY") {
+        setIsUpdatePassword(true);
+        setIsResetPassword(false);
+        setIsSignUp(false);
+      }
+    });
+  }, []);
+
+  const handleUpdatePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.updateUser({ password: password });
+      if (error) throw error;
+
+      setModal({
+        isOpen: true,
+        title: 'Success',
+        message: 'Your password has been updated successfully. You will be redirected shortly.',
+        type: 'success'
+      });
+
+      setTimeout(() => {
+        setIsUpdatePassword(false);
+        navigate(ROUTES.CLIENT_HOME);
+      }, 2000);
+    } catch (error: any) {
+      setModal({
+        isOpen: true,
+        title: 'Error',
+        message: error.message || 'Failed to update password.',
+        type: 'error'
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handlePasswordReset = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -113,10 +155,10 @@ const LoginScreen: React.FC = () => {
         <div className="flex flex-col items-center">
           <img src="/logo-privaro.png" alt="Privaro" className="h-24 w-auto object-contain mb-4" />
           <h2 className="text-3xl font-bold tracking-tight text-white">
-            {isResetPassword ? 'Reset Password' : (isSignUp ? 'Create an account' : 'Sign in to your account')}
+            {isUpdatePassword ? 'Set New Password' : (isResetPassword ? 'Reset Password' : (isSignUp ? 'Create an account' : 'Sign in to your account'))}
           </h2>
 
-          {!isResetPassword && (
+          {!isResetPassword && !isUpdatePassword && (
             <div className="mt-4 flex items-center justify-center space-x-2 bg-surface-dark/50 p-1 rounded-full border border-white/5">
               <button
                 onClick={() => setIsSignUp(false)}
@@ -136,7 +178,49 @@ const LoginScreen: React.FC = () => {
           )}
         </div>
 
-        {isResetPassword ? (
+        {isUpdatePassword ? (
+          <form className="mt-8 space-y-6" onSubmit={handleUpdatePassword}>
+            <div className="space-y-4 rounded-md shadow-sm">
+              <div className="relative">
+                <label htmlFor="new-password" className="sr-only">New Password</label>
+                <input
+                  id="new-password"
+                  name="password"
+                  type={showPassword ? "text" : "password"}
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="relative block w-full rounded-xl border-0 bg-surface-dark py-4 px-4 text-white ring-1 ring-inset ring-white/10 placeholder:text-white/50 focus:z-10 focus:ring-2 focus:ring-inset focus:ring-primary sm:text-sm sm:leading-6 transition-all"
+                  placeholder="Enter new password"
+                  minLength={6}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute inset-y-0 right-0 flex items-center pr-3 z-20 text-white/50 hover:text-white transition-colors cursor-pointer"
+                >
+                  <span className="material-symbols-outlined">
+                    {showPassword ? 'visibility_off' : 'visibility'}
+                  </span>
+                </button>
+              </div>
+            </div>
+
+            <div>
+              <button
+                type="submit"
+                disabled={loading}
+                className="group relative flex w-full justify-center rounded-xl bg-primary px-3 py-4 text-sm font-bold text-background-dark hover:bg-primary-dark focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:opacity-70 transition-all shadow-lg"
+              >
+                {loading ? (
+                  <span className="size-5 border-2 border-background-dark border-t-transparent rounded-full animate-spin"></span>
+                ) : (
+                  'Update Password'
+                )}
+              </button>
+            </div>
+          </form>
+        ) : isResetPassword ? (
           <form className="mt-8 space-y-6" onSubmit={handlePasswordReset}>
             <div className="space-y-4 rounded-md shadow-sm">
               <div>
