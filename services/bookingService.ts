@@ -268,3 +268,104 @@ export const getClientDetails = async (clientId: string) => {
         rides
     };
 };
+
+// --- DRIVER FLEET MANAGEMENT ---
+
+export const getDrivers = async () => {
+    // Fetch drivers with their vehicles
+    const { data, error } = await supabase
+        .from('drivers')
+        .select(`
+            *,
+            vehicle:vehicles(*)
+        `)
+        .order('full_name');
+
+    if (error) {
+        console.error('Error fetching drivers:', error);
+        return [];
+    }
+
+    return data.map((d: any) => ({
+        id: d.id,
+        name: d.full_name,
+        phone: d.phone,
+        email: d.email,
+        avatar: d.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(d.full_name)}&background=random`,
+        status: d.status,
+        rating: d.rating || 5.0,
+        totalTrips: d.total_trips || 0,
+        vehicle: d.vehicle && d.vehicle.length > 0 ? d.vehicle[0] : null
+    }));
+};
+
+export const getDriver = async (id: string) => {
+    const { data, error } = await supabase
+        .from('drivers')
+        .select(`
+            *,
+            vehicle:vehicles(*)
+        `)
+        .eq('id', id)
+        .single();
+
+    if (error) throw error;
+
+    return {
+        id: data.id,
+        name: data.full_name,
+        phone: data.phone,
+        email: data.email,
+        avatar: data.avatar_url,
+        status: data.status,
+        rating: data.rating,
+        totalTrips: data.total_trips,
+        vehicle: data.vehicle && data.vehicle.length > 0 ? data.vehicle[0] : null
+    };
+};
+
+export const saveDriver = async (driverData: any, vehicleData: any) => {
+    // 1. Upsert Driver
+    const driverPayload: any = {
+        full_name: driverData.name,
+        phone: driverData.phone,
+        email: driverData.email,
+        avatar_url: driverData.avatar,
+        status: driverData.status || 'inactive'
+    };
+
+    if (driverData.id && driverData.id !== 'new') {
+        driverPayload.id = driverData.id;
+    }
+
+    const { data: driver, error: driverError } = await supabase
+        .from('drivers')
+        .upsert(driverPayload)
+        .select()
+        .single();
+
+    if (driverError) throw driverError;
+
+    // 2. Upsert Vehicle (if provided)
+    if (vehicleData && (vehicleData.make || vehicleData.model)) {
+        const vehiclePayload: any = {
+            driver_id: driver.id,
+            make: vehicleData.make,
+            model: vehicleData.model,
+            color: vehicleData.color,
+            plate_number: vehicleData.plateNumber
+        };
+
+        if (vehicleData.id) {
+            vehiclePayload.id = vehicleData.id;
+        }
+
+        const { error: vehicleError } = await supabase
+            .from('vehicles')
+            .upsert(vehiclePayload);
+
+        if (vehicleError) throw vehicleError;
+    }
+
+    return driver;
+};

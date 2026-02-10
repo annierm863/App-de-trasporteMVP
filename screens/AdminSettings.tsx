@@ -27,7 +27,18 @@ const AdminSettings: React.FC = () => {
           </div>
 
           <div className="space-y-4">
-            <h2 className="text-sm font-semibold uppercase tracking-wider text-gray-400">System</h2>
+            <h2 className="text-sm font-semibold uppercase tracking-wider text-text-subtle">Fleet Management</h2>
+            <Link to={ROUTES.ADMIN_DRIVERS} className="block w-full rounded-xl bg-surface-dark p-4 border border-white/5 flex items-center justify-between hover:bg-white/5 transition-colors">
+              <div className="flex items-center gap-3">
+                <span className="material-symbols-outlined text-white/50">badge</span>
+                <span>Manage Drivers</span>
+              </div>
+              <span className="material-symbols-outlined text-primary">chevron_right</span>
+            </Link>
+          </div>
+
+          <div className="space-y-4">
+            <h2 className="text-sm font-semibold uppercase tracking-wider text-text-subtle">System</h2>
             <div className="block w-full rounded-xl bg-surface-dark p-4 border border-white/5 flex items-center justify-between hover:bg-white/5 transition-colors cursor-pointer">
               <span>Push Notifications</span>
               <div className="w-12 h-6 bg-primary rounded-full relative">

@@ -21,6 +21,8 @@ import AdminRateDetail from './screens/AdminRateDetail';
 import AdminSettings from './screens/AdminSettings';
 import AdminLogin from './screens/AdminLogin';
 import DriverProfile from './screens/DriverProfile';
+import AdminDrivers from './screens/AdminDrivers';
+import AdminDriverDetail from './screens/AdminDriverDetail';
 
 const App: React.FC = () => {
   return (
@@ -51,6 +53,8 @@ const App: React.FC = () => {
           <Route path={ROUTES.ADMIN_RATES} element={<AdminRates />} />
           <Route path={ROUTES.ADMIN_RATE_DETAIL} element={<AdminRateDetail />} />
           <Route path={ROUTES.ADMIN_SETTINGS} element={<AdminSettings />} />
+          <Route path={ROUTES.ADMIN_DRIVERS} element={<AdminDrivers />} />
+          <Route path={ROUTES.ADMIN_DRIVER_DETAIL} element={<AdminDriverDetail />} />
 
           {/* Driver Routes */}
           <Route path={ROUTES.DRIVER_PROFILE} element={<DriverProfile />} />

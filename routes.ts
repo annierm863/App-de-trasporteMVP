@@ -23,6 +23,8 @@ export const ROUTES = {
     ADMIN_RATE_DETAIL: "/admin/rate/:id",
     ADMIN_SETTINGS: "/admin/settings",
     ADMIN_LOGIN: "/admin/login",
+    ADMIN_DRIVERS: "/admin/drivers",
+    ADMIN_DRIVER_DETAIL: "/admin/driver/:id",
 
     // Driver
     DRIVER_PROFILE: "/driver/profile",
