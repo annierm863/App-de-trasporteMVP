@@ -135,3 +135,136 @@ Privaro Premium Team
 
     return `mailto:${booking.clientEmail}?subject=${subject}&body=${body}`;
 };
+
+export const getAdminClients = async (options?: { sortBy?: 'recent' | 'spend' | 'rides'; searchQuery?: string }) => {
+    // 1. Fetch Clients
+    let clientQuery = supabase.from('clients').select('*');
+
+    // Simple search implementation (fetch all then filter if search is present, or use ILIKE if possible)
+    // For scalable search, we'd use textSearch or similar, but for MVP JS filter is fine or ILIKE
+    if (options?.searchQuery) {
+        clientQuery = clientQuery.ilike('full_name', `%${options.searchQuery}%`);
+    }
+
+    const { data: clients, error: clientError } = await clientQuery;
+
+    if (clientError) {
+        console.error('Error fetching clients:', clientError);
+        return [];
+    }
+
+    // 2. Fetch Bookings to aggregate stats
+    const { data: bookings, error: bookingError } = await supabase
+        .from('bookings')
+        .select('client_id, estimated_fare_min, status, pickup_datetime');
+
+    if (bookingError) {
+        console.error('Error fetching bookings for stats:', bookingError);
+        return [];
+    }
+
+    // 3. Aggregate Stats
+    const clientStats: any = {};
+    bookings?.forEach((b: any) => {
+        if (!clientStats[b.client_id]) {
+            clientStats[b.client_id] = { totalRides: 0, totalSpend: 0, lastRide: null };
+        }
+
+        if (b.status === 'completed') {
+            clientStats[b.client_id].totalRides += 1;
+            clientStats[b.client_id].totalSpend += parseFloat(b.estimated_fare_min || 0);
+        }
+
+        // Track last ride date
+        if (b.pickup_datetime) {
+            const date = new Date(b.pickup_datetime);
+            if (!clientStats[b.client_id].lastRide || date > clientStats[b.client_id].lastRide) {
+                clientStats[b.client_id].lastRide = date;
+            }
+        }
+    });
+
+    // 4. Merge and Map
+    let mappedClients = clients.map((c: any) => {
+        const stats = clientStats[c.id] || { totalRides: 0, totalSpend: 0, lastRide: null };
+        return {
+            id: c.id,
+            name: c.full_name,
+            phone: c.phone,
+            email: c.email,
+            avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(c.full_name)}&background=random`,
+            totalRides: stats.totalRides,
+            totalSpend: stats.totalSpend,
+            lastRide: stats.lastRide
+        };
+    });
+
+    // 5. Sort
+    if (options?.sortBy === 'spend') {
+        mappedClients.sort((a, b) => b.totalSpend - a.totalSpend);
+    } else if (options?.sortBy === 'rides') {
+        mappedClients.sort((a, b) => b.totalRides - a.totalRides);
+    } else {
+        // default recent or name
+        mappedClients.sort((a, b) => a.name.localeCompare(b.name));
+    }
+
+    return mappedClients;
+};
+
+export const getClientDetails = async (clientId: string) => {
+    // 1. Fetch Client Profile
+    const { data: client, error: clientError } = await supabase
+        .from('clients')
+        .select('*')
+        .eq('id', clientId)
+        .single();
+
+    if (clientError) throw clientError;
+
+    // 2. Fetch Client Bookings (History)
+    const { data: bookings, error: bookingError } = await supabase
+        .from('bookings')
+        .select('*')
+        .eq('client_id', clientId)
+        .order('pickup_datetime', { ascending: false });
+
+    if (bookingError) throw bookingError;
+
+    // 3. Calculate Stats
+    let totalRides = 0;
+    let totalSpend = 0;
+
+    const rides = bookings.map((b: any) => {
+        if (b.status === 'completed') {
+            totalRides++;
+            totalSpend += parseFloat(b.estimated_fare_min || 0);
+        }
+        return {
+            id: b.id,
+            date: new Date(b.pickup_datetime).toLocaleDateString(),
+            time: new Date(b.pickup_datetime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            pickup: b.pickup_address,
+            dropoff: b.dropoff_address,
+            fare: b.estimated_fare_min,
+            status: b.status
+        };
+    });
+
+    return {
+        profile: {
+            id: client.id,
+            name: client.full_name,
+            phone: client.phone,
+            email: client.email,
+            avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(client.full_name)}&background=random`,
+            joinedDate: new Date(client.created_at).toLocaleDateString()
+        },
+        stats: {
+            totalRides,
+            totalSpend,
+            rating: 5.0 // Placeholder as we don't have ratings table yet
+        },
+        rides
+    };
+};
