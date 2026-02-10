@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ROUTES } from '../routes';
 import { BottomNavAdmin } from '../components/Navigation';
-import { getAdminBookings, updateBookingStatus } from '../services/bookingService';
+import { getAdminBookings, updateBookingStatus, generateInvoiceEmailUrl } from '../services/bookingService';
 import { BookingActionModal } from '../components/BookingActionModal';
 
 const AdminBookings: React.FC = () => {
@@ -74,6 +74,31 @@ const AdminBookings: React.FC = () => {
     }
   };
 
+  const handleComplete = async (id: string) => {
+    try {
+      setActionLoading(true);
+      await updateBookingStatus(id, 'completed');
+
+      // Generate Invoice Email
+      if (selectedBooking) {
+        const mailtoLink = generateInvoiceEmailUrl(selectedBooking);
+        if (mailtoLink) {
+          window.location.href = mailtoLink;
+        } else {
+          alert('Client email missing. Cannot generate invoice.');
+        }
+      }
+
+      setBookings(prev => prev.map(b => b.id === id ? { ...b, status: 'completed' } : b));
+      handleCloseModal();
+    } catch (error) {
+      console.error('Error completing booking:', error);
+      alert('Failed to complete booking');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   const handleContact = (contact: string, type: 'phone' | 'email') => {
     if (type === 'phone') window.location.href = `tel:${contact}`;
     else window.location.href = `mailto:${contact}`;
@@ -136,8 +161,8 @@ const AdminBookings: React.FC = () => {
                 key={filter}
                 onClick={() => setActiveFilter(filter)}
                 className={`flex h-8 shrink-0 items-center justify-center px-4 rounded-full transition-colors snap-start ${activeFilter === filter
-                    ? 'bg-white text-background-dark'
-                    : 'bg-white/5 text-gray-400 hover:bg-white/10'
+                  ? 'bg-white text-black font-extrabold'
+                  : 'bg-white/5 text-gray-400 hover:bg-white/10'
                   }`}
               >
                 <span className="text-xs font-bold capitalize">{filter}</span>
@@ -175,14 +200,14 @@ const AdminBookings: React.FC = () => {
                           <span className="text-lg font-bold text-white">{booking.time}</span>
                         </div>
                         <div className={`px-2.5 py-1 rounded-md border ${booking.status === 'confirmed' ? 'bg-green-500/10 border-green-500/20' :
-                            booking.status === 'requested' ? 'bg-yellow-500/10 border-yellow-500/20' :
-                              booking.status === 'cancelled' ? 'bg-red-500/10 border-red-500/20' :
-                                'bg-white/5 border-white/10'
+                          booking.status === 'requested' ? 'bg-yellow-500/10 border-yellow-500/20' :
+                            booking.status === 'cancelled' ? 'bg-red-500/10 border-red-500/20' :
+                              'bg-white/5 border-white/10'
                           }`}>
                           <span className={`text-xs font-bold uppercase tracking-wide ${booking.status === 'confirmed' ? 'text-green-500' :
-                              booking.status === 'requested' ? 'text-yellow-500' :
-                                booking.status === 'cancelled' ? 'text-red-500' :
-                                  'text-gray-400'
+                            booking.status === 'requested' ? 'text-yellow-500' :
+                              booking.status === 'cancelled' ? 'text-red-500' :
+                                'text-gray-400'
                             }`}>
                             {booking.status.replace('_', ' ')}
                           </span>
@@ -227,6 +252,7 @@ const AdminBookings: React.FC = () => {
             onConfirm={handleConfirm}
             onReject={handleReject}
             onContact={handleContact}
+            onComplete={handleComplete}
           />
         )}
       </div>

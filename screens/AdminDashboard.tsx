@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import { ROUTES } from '../routes';
 import { BottomNavAdmin } from '../components/Navigation';
 import { supabase } from '../services/supabase';
-import { getAdminStats, getAdminBookings, updateBookingStatus } from '../services/bookingService';
+import { getAdminStats, getAdminBookings, updateBookingStatus, generateInvoiceEmailUrl } from '../services/bookingService';
 import { BookingActionModal } from '../components/BookingActionModal';
 
 const AdminDashboard: React.FC = () => {
@@ -96,6 +96,31 @@ const AdminDashboard: React.FC = () => {
     } catch (error) {
       console.error('Error rejecting booking:', error);
       alert('Failed to reject booking');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleComplete = async (id: string) => {
+    try {
+      setActionLoading(true);
+      await updateBookingStatus(id, 'completed');
+
+      // Generate Invoice Email
+      if (selectedBooking) {
+        const mailtoLink = generateInvoiceEmailUrl(selectedBooking);
+        if (mailtoLink) {
+          window.location.href = mailtoLink;
+        } else {
+          alert('Client email missing. Cannot generate invoice.');
+        }
+      }
+
+      setBookings(prev => prev.map(b => b.id === id ? { ...b, status: 'completed' } : b));
+      handleCloseModal();
+    } catch (error) {
+      console.error('Error completing booking:', error);
+      alert('Failed to complete booking');
     } finally {
       setActionLoading(false);
     }
@@ -202,14 +227,14 @@ const AdminDashboard: React.FC = () => {
                       <span className="text-sm font-bold text-white">{booking.time}</span>
                     </div>
                     <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium border ${booking.status === 'confirmed' ? 'bg-green-500/10 text-green-400 border-green-500/20' :
-                        booking.status === 'requested' ? 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20' :
-                          booking.status === 'cancelled' ? 'bg-red-500/10 text-red-400 border-red-500/20' :
-                            'bg-slate-500/10 text-slate-400 border-slate-500/20'
+                      booking.status === 'requested' ? 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20' :
+                        booking.status === 'cancelled' ? 'bg-red-500/10 text-red-400 border-red-500/20' :
+                          'bg-slate-500/10 text-slate-400 border-slate-500/20'
                       }`}>
                       <span className={`size-1.5 rounded-full ${booking.status === 'confirmed' ? 'bg-green-500' :
-                          booking.status === 'requested' ? 'bg-yellow-500' :
-                            booking.status === 'cancelled' ? 'bg-red-500' :
-                              'bg-slate-500'
+                        booking.status === 'requested' ? 'bg-yellow-500' :
+                          booking.status === 'cancelled' ? 'bg-red-500' :
+                            'bg-slate-500'
                         }`}></span>
                       {booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}
                     </span>
@@ -246,6 +271,7 @@ const AdminDashboard: React.FC = () => {
             onConfirm={handleConfirm}
             onReject={handleReject}
             onContact={handleContact}
+            onComplete={handleComplete}
           />
         )}
 

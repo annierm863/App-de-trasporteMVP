@@ -7,9 +7,10 @@ interface BookingActionModalProps {
     onConfirm: (id: string) => void;
     onReject: (id: string) => void;
     onContact: (contact: string, type: 'phone' | 'email') => void;
+    onComplete?: (id: string) => void;
 }
 
-export const BookingActionModal: React.FC<BookingActionModalProps> = ({ booking, onClose, onConfirm, onReject, onContact }) => {
+export const BookingActionModal: React.FC<BookingActionModalProps> = ({ booking, onClose, onConfirm, onReject, onContact, onComplete }) => {
     if (!booking) return null;
 
     return (
@@ -72,18 +73,48 @@ export const BookingActionModal: React.FC<BookingActionModalProps> = ({ booking,
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
-                    <button
-                        onClick={() => onReject(booking.id)}
-                        className="py-3 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-500 font-bold text-sm transition-all border border-red-500/20"
-                    >
-                        Reject
-                    </button>
-                    <button
-                        onClick={() => onConfirm(booking.id)}
-                        className="py-3 rounded-xl bg-[#f4c025] hover:bg-[#dcb010] text-[#181611] font-bold text-sm transition-all shadow-lg shadow-[#f4c025]/20"
-                    >
-                        Confirm
-                    </button>
+                    {booking.status === 'requested' && (
+                        <>
+                            <button
+                                onClick={() => onReject(booking.id)}
+                                className="py-3 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-500 font-bold text-sm transition-all border border-red-500/20"
+                            >
+                                Reject
+                            </button>
+                            <button
+                                onClick={() => onConfirm(booking.id)}
+                                className="py-3 rounded-xl bg-[#f4c025] hover:bg-[#dcb010] text-[#181611] font-bold text-sm transition-all shadow-lg shadow-[#f4c025]/20"
+                            >
+                                Confirm
+                            </button>
+                        </>
+                    )}
+
+                    {(booking.status === 'confirmed' || booking.status === 'on_the_way') && (
+                        <>
+                            <button
+                                onClick={() => onReject(booking.id)}
+                                className="py-3 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-500 font-bold text-sm transition-all border border-red-500/20"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={() => onComplete && onComplete(booking.id)}
+                                className="py-3 rounded-xl bg-green-500 hover:bg-green-600 text-white font-bold text-sm transition-all shadow-lg shadow-green-500/20"
+                            >
+                                Complete Ride
+                            </button>
+                        </>
+                    )}
+
+                    {(booking.status === 'completed' || booking.status === 'cancelled') && (
+                        <button
+                            onClick={onClose}
+                            className="col-span-2 py-3 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-sm transition-all"
+                        >
+                            Close
+                        </button>
+                    )}
                 </div>
             </div>
         </div>

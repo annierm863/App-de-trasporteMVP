@@ -41,6 +41,7 @@ export const getAdminBookings = async (options?: { status?: string; searchQuery?
             pickup_datetime,
             pickup_address,
             dropoff_address,
+            estimated_fare_min,
             status,
             created_at,
             client:clients (
@@ -58,15 +59,7 @@ export const getAdminBookings = async (options?: { status?: string; searchQuery?
     }
 
     if (options?.searchQuery) {
-        // Search by client name is tricky with joins in Supabase directly if not using RPC or flattened view.
-        // For MVP/Small scale: Fetch then filter in JS is safest/easiest if RLS/Foreign Tables allow.
-        // BUT `!inner` join could work if we want to filter by client name.
-        // Let's try client!inner first.
-        // Actually, for simplicity and stability, let's fetch more and filter in JS for search
-        // OR use a specific search logic.
-        // Given the prompt "make it functional", let's try to simple JS filter for search if dataset is small
-        // or improved query if possible.
-        // Let's stick to simple query and JS filter for search to avoid complex join syntax errors without verifying exact pg schema extensions.
+        // Search logic
     }
 
     const { data, error } = await query;
@@ -84,6 +77,7 @@ export const getAdminBookings = async (options?: { status?: string; searchQuery?
         time: new Date(b.pickup_datetime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         pickupAddress: b.pickup_address,
         dropoffAddress: b.dropoff_address,
+        fare: b.estimated_fare_min ? `$${b.estimated_fare_min}` : 'Calculated at end of trip',
         clientName: b.client?.full_name || 'Unknown Client',
         clientAvatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(b.client?.full_name || 'U')}&background=random`,
         clientPhone: b.client?.phone,
@@ -92,7 +86,7 @@ export const getAdminBookings = async (options?: { status?: string; searchQuery?
         isVip: false
     }));
 
-    // JS Search Filter (Robust for MVP)
+    // JS Search Filter
     if (options?.searchQuery) {
         const lowerQ = options.searchQuery.toLowerCase();
         mappedData = mappedData.filter(b =>
@@ -105,7 +99,7 @@ export const getAdminBookings = async (options?: { status?: string; searchQuery?
     return mappedData;
 };
 
-export const updateBookingStatus = async (id: string, status: 'confirmed' | 'cancelled') => {
+export const updateBookingStatus = async (id: string, status: 'confirmed' | 'cancelled' | 'completed') => {
     const { error } = await supabase
         .from('bookings')
         .update({ status })
@@ -114,4 +108,30 @@ export const updateBookingStatus = async (id: string, status: 'confirmed' | 'can
     if (error) {
         throw error;
     }
+};
+
+export const generateInvoiceEmailUrl = (booking: any) => {
+    if (!booking.clientEmail) return null;
+
+    const subject = encodeURIComponent(`Ride Receipt - ${booking.date}`);
+    const body = encodeURIComponent(`Dear ${booking.clientName},
+
+Thank you for riding with Privaro Premium. Your trip has been completed.
+
+TRIP DETAILS
+----------------------------
+Date: ${booking.date}
+Time: ${booking.time}
+Pickup: ${booking.pickupAddress}
+Dropoff: ${booking.dropoffAddress}
+
+Total Fare: ${booking.fare}
+
+We hope to see you again soon!
+
+Best regards,
+Privaro Premium Team
+    `);
+
+    return `mailto:${booking.clientEmail}?subject=${subject}&body=${body}`;
 };
