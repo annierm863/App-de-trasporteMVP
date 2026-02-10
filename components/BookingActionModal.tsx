@@ -80,7 +80,7 @@ export const BookingActionModal: React.FC<BookingActionModalProps> = ({ booking,
                     </button>
                     <button
                         onClick={() => onConfirm(booking.id)}
-                        className="py-3 rounded-xl bg-primary hover:bg-primary/90 text-background-dark font-bold text-sm transition-all shadow-lg shadow-primary/20"
+                        className="py-3 rounded-xl bg-[#f4c025] hover:bg-[#dcb010] text-[#181611] font-bold text-sm transition-all shadow-lg shadow-[#f4c025]/20"
                     >
                         Confirm
                     </button>
