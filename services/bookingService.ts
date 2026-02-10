@@ -33,11 +33,8 @@ export const getAdminStats = async () => {
     };
 };
 
-export const getAdminBookings = async () => {
-    const today = new Date().toISOString().split('T')[0];
-
-    // Fetch future bookings (including today)
-    const { data, error } = await supabase
+export const getAdminBookings = async (options?: { status?: string; searchQuery?: string }) => {
+    let query = supabase
         .from('bookings')
         .select(`
             id,
@@ -53,19 +50,37 @@ export const getAdminBookings = async () => {
                 email
             )
         `)
-        .gte('pickup_datetime', `${today}T00:00:00`)
-        .order('pickup_datetime', { ascending: true });
+        .order('pickup_datetime', { ascending: true }); // Default to upcoming first
+
+    // Apply filters
+    if (options?.status && options.status !== 'all') {
+        query = query.eq('status', options.status);
+    }
+
+    if (options?.searchQuery) {
+        // Search by client name is tricky with joins in Supabase directly if not using RPC or flattened view.
+        // For MVP/Small scale: Fetch then filter in JS is safest/easiest if RLS/Foreign Tables allow.
+        // BUT `!inner` join could work if we want to filter by client name.
+        // Let's try client!inner first.
+        // Actually, for simplicity and stability, let's fetch more and filter in JS for search
+        // OR use a specific search logic.
+        // Given the prompt "make it functional", let's try to simple JS filter for search if dataset is small
+        // or improved query if possible.
+        // Let's stick to simple query and JS filter for search to avoid complex join syntax errors without verifying exact pg schema extensions.
+    }
+
+    const { data, error } = await query;
 
     if (error) {
         console.error('Error fetching bookings:', error);
         return [];
     }
 
-    // Map to Booking interface (or a simpler version suitable for the dashboard)
-    return data.map((b: any) => ({
+    let mappedData = data.map((b: any) => ({
         id: b.id,
         status: b.status,
-        date: new Date(b.pickup_datetime).toLocaleDateString(),
+        date: new Date(b.pickup_datetime).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' }),
+        rawDate: b.pickup_datetime, // For sorting/grouping
         time: new Date(b.pickup_datetime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         pickupAddress: b.pickup_address,
         dropoffAddress: b.dropoff_address,
@@ -74,10 +89,20 @@ export const getAdminBookings = async () => {
         clientPhone: b.client?.phone,
         clientEmail: b.client?.email,
         pickupDatetime: b.pickup_datetime,
-        // VIP logic could be added if client has `is_vip` field, for now hardcoded or random for demo?
-        // Let's assume standard client unless we add a VIP table.
-        isVip: false // Placeholder
+        isVip: false
     }));
+
+    // JS Search Filter (Robust for MVP)
+    if (options?.searchQuery) {
+        const lowerQ = options.searchQuery.toLowerCase();
+        mappedData = mappedData.filter(b =>
+            b.clientName.toLowerCase().includes(lowerQ) ||
+            b.pickupAddress.toLowerCase().includes(lowerQ) ||
+            b.dropoffAddress.toLowerCase().includes(lowerQ)
+        );
+    }
+
+    return mappedData;
 };
 
 export const updateBookingStatus = async (id: string, status: 'confirmed' | 'cancelled') => {
